@@ -5,8 +5,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -25,22 +27,42 @@ import java.nio.ByteOrder;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-String serverIP;
-    Button startKlient;
+    String serverIP;
+    Button startKlient, startServer;
     TextView ipInfo;
+
+    String info  = "LOG: \n";
+
+    final int PORT = 5050;
+
+    String IP_ADDRESS = "localhost";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        String phoneModel = Build.MODEL;
+/*
+        //Test fobindelse til sig selv
+        if (phoneModel.equals("SM-G930F"))
+            IP_ADDRESS = "10.80.0.138"; //galaxy s7
+        else if (phoneModel.equals("SM-G970F"))
+            IP_ADDRESS = "10.212.178.72"; //galaxy s10e
+        else
+            IP_ADDRESS = "10.0.2.15"; //Emulator SDK 15
+*/
+
         startKlient = findViewById(R.id.button);
         startKlient.setOnClickListener(this);
+        startServer = findViewById(R.id.button2);
+        startServer.setOnClickListener(this);
+
+        ipInfo = findViewById(R.id.ipinfo);
 
 
-        Thread serverTråd = new Thread(new MinServerTråd());
-        serverTråd.start();
-
+        //TODO: ny knap som lukker klienten og starter en ny
 
 
 
@@ -50,14 +72,22 @@ String serverIP;
 
     @Override
     public void onClick(View view) {
-        // new Handler().postDelayed(new Runnable() {
-        //   @Override
-        // public void run() {
-        Thread klientTråd = new Thread(new MinKlientTråd());
-        klientTråd.start();
-        //}
-        //}, 50); //din kode køres om 50 milisekunder
-        startKlient.setEnabled(false);
+
+        if(view == startKlient) {
+            // new Handler().postDelayed(new Runnable() {
+            //   @Override
+            // public void run() {
+            Thread klientTråd = new Thread(new MinKlientTråd());
+            klientTråd.start();
+            //}
+            //}, 50); //din kode køres om 50 milisekunder
+            startKlient.setEnabled(false);
+        }
+        else if (view == startServer){
+            Thread serverTråd = new Thread(new MinServerTråd());
+            serverTråd.start();
+            startServer.setEnabled(false);
+        }
     }
 
     class MinServerTråd implements Runnable {
@@ -66,32 +96,34 @@ String serverIP;
         Socket socket;
         try {
             serverIP = getLocalIpAddress();
-            System.out.println("SERVER: SERVER IP: " + serverIP);
+            update("SERVER: Automatic SERVER IP: " + serverIP);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
         try {
-            System.out.println("SERVER: starting serversocket");
-            ServerSocket server = new ServerSocket(5050);
+            update("SERVER: starting serversocket");
+            ServerSocket server = new ServerSocket(PORT);
 
-            System.out.println("SERVER: start listening..");
+            update("SERVER: start listening..");
             socket = server.accept();
-            System.out.println("SERVER connection accepted");
+            update("SERVER connection accepted");
             PrintWriter output = new PrintWriter(socket.getOutputStream());
             output.write("BESKEDEN KOMMER HER");
+            update("SERVER: Besked skrevet til output");
             //Thread.sleep(50);
             // output.write("NY BESKED");
             output.flush();
+            update("SERVER: flush");
 
 
         } catch (
                 IOException e) {
-            System.out.println("oops!!");
+            update("oops!!");
             throw new RuntimeException(e);
 
 
         }
-        System.out.println("SERVER (later): SERVER IP: " + serverIP);
+        update("SERVER (later): Automatic SERVER IP: " + serverIP);
     }
 }    private String getLocalIpAddress() throws UnknownHostException {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
@@ -106,15 +138,17 @@ class MinKlientTråd  implements Runnable {
         BufferedReader input;
         Socket socket;
         try {
-            System.out.println("CLIENT: starting client socket");
+            update("CLIENT: starting client socket");
 
 
-            socket = new Socket(serverIP, 5050);
-            //socket = new Socket(""localhost/127.0.0.1");
-            //s7 SERVER IP: 10.80.0.138
-            //socket = new Socket("10.80.0.138", 5050);
-            System.out.println("CLIENT: client connected..");
+            //socket = new Socket(serverIP, 5050);
+            //socket = new Socket("localhost/127.0.0.1");
+            //socket = new Socket("10.212.178.72", 5050);//fysisk s10e indstillinger
 
+            //socket = new Socket("10.80.0.138", 5050);//fysisk s7 indstillinger
+            socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
+
+            update("CLIENT: client connected to "+ IP_ADDRESS);
              input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 } catch (IOException e) {
@@ -122,16 +156,25 @@ class MinKlientTråd  implements Runnable {
         }
 
 
-        System.out.println("CLIENT: Start reading");
+        update("CLIENT: Try reading");
         while (true) {
 
                 try {
+                    boolean klar = input.ready();
+                    if (!klar){
+                        update("not ready");
+                        retry();
+                        break;
+                    }
+                    else{
+                        update("Ready to read");
+                    }
                     final String message = input.readLine();
                     if (message != null) {
                     //    MainActivity.this.runOnUiThread(new Runnable() {
                       //      @Override
                         //    public void run() {
-                                System.out.println("CLIENT: Server sent me this: " + message + " ");
+                        update("CLIENT: SUCCESS!!! Server sent me this: " + message + " ");
                           //  }
                        // });
                     }
@@ -139,12 +182,35 @@ class MinKlientTråd  implements Runnable {
 
                 } catch (
                         IOException e) {
-                    System.out.println("CLIENT: oops ioexception!!");
+                    update("CLIENT: oops ioexception!!");
                     throw new RuntimeException(e);
                 }
-            System.out.println("loop");
+            update("end loop");
             }
-        System.out.println("CLIENT: Done reading");
+        update("CLIENT: Done reading");
         }//Run()
+    }
+
+    public void update (String besked){
+        System.out.println(besked);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                info += besked + "\n";
+                ipInfo.setText(info);
+            }
+        });
+
+    }
+
+    public void retry (){
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                startKlient.setEnabled(true);
+            }
+        });
+
     }
 }
