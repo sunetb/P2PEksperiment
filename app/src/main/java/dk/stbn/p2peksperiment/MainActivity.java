@@ -35,7 +35,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     final int PORT = 5050;
 
-    String IP_ADDRESS = "localhost";
+    String IP_ADDRESS = "127.0.0.1";
+
+    //Debug state
+    boolean useLocalhost = false; //overrules useAutoIP
+    boolean useAutoIP = true;
+
+    //Other state
+    boolean retryClient = false;
 
 
     @Override
@@ -44,15 +51,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         String phoneModel = Build.MODEL;
-/*
-        //Test fobindelse til sig selv
-        if (phoneModel.equals("SM-G930F"))
-            IP_ADDRESS = "10.80.0.138"; //galaxy s7
-        else if (phoneModel.equals("SM-G970F"))
-            IP_ADDRESS = "10.212.178.72"; //galaxy s10e
-        else
-            IP_ADDRESS = "10.0.2.15"; //Emulator SDK 15
-*/
+
+        if (!useLocalhost) {
+
+            //Auto på s7 hjemme (helledusseda): 192.186.10.106
+            //Test fobindelse til sig selv
+            if (phoneModel.equals("SM-G930F"))
+                IP_ADDRESS = "10.80.0.138"; //galaxy s7
+            else if (phoneModel.equals("SM-G970F"))
+                IP_ADDRESS = "10.212.178.72"; //galaxy s10e
+            else
+                IP_ADDRESS = "10.0.2.15"; //Emulator SDK 15
+        }
 
         startKlient = findViewById(R.id.button);
         startKlient.setOnClickListener(this);
@@ -138,7 +148,7 @@ class MinKlientTråd  implements Runnable {
         BufferedReader input;
         Socket socket;
         try {
-            update("CLIENT: starting client socket");
+            update("CLIENT: starting client socket on "+IP_ADDRESS);
 
 
             //socket = new Socket(serverIP, 5050);
@@ -146,11 +156,16 @@ class MinKlientTråd  implements Runnable {
             //socket = new Socket("10.212.178.72", 5050);//fysisk s10e indstillinger
 
             //socket = new Socket("10.80.0.138", 5050);//fysisk s7 indstillinger
-            socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
+            if (useAutoIP){
+                update("CLIENT: Using Auto IP");
+                socket = new Socket(serverIP, PORT);
+            }
+            else
+                socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
 
             update("CLIENT: client connected to "+ IP_ADDRESS);
              input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+                update("CLIENT: Got inputstream");
                 } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -161,13 +176,18 @@ class MinKlientTråd  implements Runnable {
 
                 try {
                     boolean klar = input.ready();
-                    if (!klar){
+                    //try hard
+                    if (retryClient)
+                        klar = true;
+                    if (!klar ){
                         update("not ready");
                         retry();
+                        retryClient = true;
                         break;
                     }
                     else{
-                        update("Ready to read");
+                        if(!retryClient) update("Ready to read");
+                        else update("Force read. Ready now? "+ input.ready());
                     }
                     final String message = input.readLine();
                     if (message != null) {
@@ -209,6 +229,7 @@ class MinKlientTråd  implements Runnable {
             @Override
             public void run() {
                 startKlient.setEnabled(true);
+
             }
         });
 
