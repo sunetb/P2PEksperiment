@@ -1,6 +1,6 @@
 package dk.stbn.p2peksperiment;
 
-import androidx.appcompat.app.AppCompatActivity;
+
 
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +26,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -33,17 +36,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     String info  = "LOG: \n";
 
-    final int PORT = 5050;
+    final int PORT = 4444;
 
     String IP_ADDRESS = "127.0.0.1";
 
     //Debug state
     boolean useLocalhost = false; //overrules useAutoIP
-    boolean useAutoIP = true;
+    boolean useAutoIP = false;
 
     //Other state
     boolean retryClient = false;
-
+    int clicks = 0;
+    String[] addresses = {
+            "172.17.0.1",
+            "10.90.17.157",
+            "192.168.50.239"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 IP_ADDRESS = "10.80.0.138"; //galaxy s7
             else if (phoneModel.equals("SM-G970F"))
                 IP_ADDRESS = "10.212.178.72"; //galaxy s10e
+                //Galaxy s10e IOT 10.90.17.158
             else
                 IP_ADDRESS = "10.0.2.15"; //Emulator SDK 15
         }
@@ -70,9 +79,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startServer.setOnClickListener(this);
 
         ipInfo = findViewById(R.id.ipinfo);
+        //startKlient.setEnabled(false);
 
-
-        //TODO: ny knap som lukker klienten og starter en ny
+        //TODO:
+        // ny knap som lukker klienten og starter en ny
+        //Både skriv og læs på klient og server - pakkes i metoder!! Kræver det Handler?
 
 
 
@@ -91,12 +102,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             klientTråd.start();
             //}
             //}, 50); //din kode køres om 50 milisekunder
-            startKlient.setEnabled(false);
+            //startKlient.setEnabled(false);
+
         }
         else if (view == startServer){
             Thread serverTråd = new Thread(new MinServerTråd());
             serverTråd.start();
             startServer.setEnabled(false);
+            startKlient.setEnabled(true);
         }
     }
 
@@ -148,7 +161,8 @@ class MinKlientTråd  implements Runnable {
         BufferedReader input;
         Socket socket;
         try {
-            update("CLIENT: starting client socket on "+IP_ADDRESS);
+
+            update("CLIENT: starting client socket on "+addresses[clicks]);
 
 
             //socket = new Socket(serverIP, 5050);
@@ -156,14 +170,18 @@ class MinKlientTråd  implements Runnable {
             //socket = new Socket("10.212.178.72", 5050);//fysisk s10e indstillinger
 
             //socket = new Socket("10.80.0.138", 5050);//fysisk s7 indstillinger
-            if (useAutoIP){
+   /*         if (useAutoIP){
                 update("CLIENT: Using Auto IP");
-                socket = new Socket(serverIP, PORT);
-            }
-            else
-                socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
+                IP_ADDRESS = serverIP;
+            }*/
+            //Test
+            //IP_ADDRESS = "192.168.50.239"; //DTU DELL
+            socket = new Socket(addresses[1], PORT);//Fra emulator, indstillinger
 
-            update("CLIENT: client connected to "+ IP_ADDRESS);
+            update("CLIENT: client connected to "+ addresses[clicks]);
+            update("Clicks: "+clicks);
+            clicks++;
+            if(clicks == addresses.length) clicks = 0;
              input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 update("CLIENT: Got inputstream");
                 } catch (IOException e) {
