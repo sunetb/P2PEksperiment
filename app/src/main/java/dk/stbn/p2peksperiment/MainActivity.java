@@ -152,68 +152,93 @@ private String getLocalIpAddress() throws UnknownHostException {
         int ipInt = wifiInfo.getIpAddress();
         return InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
     }
-class MinKlientTråd  implements Runnable {
-    @Override
-    public void run() {
-        BufferedReader input;
-        Socket socket;
-        try {
+    class MinKlientTråd  implements Runnable {
+        @Override
+        public void run() {
 
-            update("CLIENT: starting client socket on "+IP_ADDRESS);
+            try {
+                //Scanner input = new Scanner(System.in);
+                update("Please write ip of server (Type 'c' to use hardcoded: 10.90.17.181) ");
+                //String ip = input.nextLine();
+                //if (ip.equalsIgnoreCase("c"))
+                //    ip = "10.90.17.181";
 
+                update("CLIENT: starting client socket ");
+                //Socket klientsocket = new Socket(ip, 4444);//Fra emulator, indstillinger
 
-            //socket = new Socket(serverIP, 5050);
-            //socket = new Socket("localhost/127.0.0.1");
-            //socket = new Socket("10.212.178.72", 5050);//fysisk s10e indstillinger
+                update("CLIENT: client connected ");
 
-            //socket = new Socket("10.80.0.138", 5050);//fysisk s7 indstillinger
-   /*         if (useAutoIP){
-                update("CLIENT: Using Auto IP");
-                IP_ADDRESS = serverIP;
-            }*/
-            //Test
-            //IP_ADDRESS = "192.168.50.239"; //DTU DELL
-            socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
+                DataInputStream instream = new DataInputStream(klientsocket.getInputStream());
+                DataOutputStream out = new DataOutputStream(klientsocket.getOutputStream());
+                update("CLIENT: made outputstream");
+                boolean carryOn = true;
+                while(carryOn) {
 
-            update("CLIENT: client connected to "+ IP_ADDRESS);
+                    //update("Type message (Enter sends the message)");
+                   // String besked = input.nextLine();
+                    //out.writeUTF(besked);
+                    //update("CLIENT: wrote to outputstream");
 
+                    out.flush();
+                    //update("CLIENT: flushed");
+                    String messageFromServer = instream.readUTF();
+                    update("Server says: " +messageFromServer);
+                    carryOn = !messageFromServer.equalsIgnoreCase("bye");
+                }
+                //input.close();
+                update("CLIENT: closed Scanner");
+                instream.close();
+                update("CLIENT: closed inputstream");
+                out.close();
+                update("CLIENT: closed outputstream");
+                klientsocket.close();
+                update("CLIENT: closed socket");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
 
-
-             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                update("CLIENT: Got inputstream");
-                } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        update("CLIENT: Try reading");
-        while (true) {
+ /*           boolean success = false;
+            update("CLIENT: Try reading");
+            while (true) {
 
                 try {
-                    final String message = input.readLine();
-                    if (message != null) {
-                    //    MainActivity.this.runOnUiThread(new Runnable() {
-                      //      @Override
-                        //    public void run() {
-                        update("CLIENT: SUCCESS!!! Server sent me this: " + message + " ");
-                          //  }
-                       // });
-                    }
-                    else {
-                        update("messages was null");
+                    boolean klar = input.ready();
+                    //try hard
+                    if (retryClient)
+                        klar = true;
+                    if (!klar ){
+                        update("not ready");
+                        //retry();
+                        retryClient = true;
                         break;
                     }
+                    else{
+                        if(!retryClient) update("Ready to read");
+                        else update("Force read. Ready now? "+ input.ready());
+                    }
+                    final String message = input.readLine();
+                    System.out.println(message);
+                    if (message != null) {
+                        //    MainActivity.this.runOnUiThread(new Runnable() {
+                        //      @Override
+                        //    public void run() {
+                        update("CLIENT: SUCCESS!!! Server sent me this: " + message + " ");
+                        success = true;
+                        //  }
+                        // });
+                    }
+                    else break;
 
                 } catch (
                         IOException e) {
                     update("CLIENT: oops ioexception!!");
                     throw new RuntimeException(e);
                 }
-            update("end loop");
+                update("end loop");
             }
-        update("CLIENT: Done reading");
+            update(success ? "CLIENT: Done reading" : "ØV ikke klar");*/
         }//Run()
-    }
+    } //class MinKlientTråd
 
     public void update (String besked){
         System.out.println(besked);
@@ -226,6 +251,8 @@ class MinKlientTråd  implements Runnable {
         });
 
     }
+
+
 
     public void retry (){
 
