@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-
     String serverIP;
     Button startKlient, startServer;
     TextView ipInfo;
