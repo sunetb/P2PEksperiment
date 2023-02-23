@@ -16,6 +16,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,6 +29,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     String serverIP;
@@ -39,18 +42,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     String IP_ADDRESS = "127.0.0.1";
 
-    //Debug state
-    boolean useLocalhost = false; //overrules useAutoIP
-    boolean useAutoIP = false;
 
-    //Other state
-    boolean retryClient = false;
-    int clicks = 0;
-    String[] addresses = {
-            "172.17.0.1",
-            "10.90.17.157",
-            "192.168.50.239"
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,18 +51,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         String phoneModel = Build.MODEL;
 
-        if (!useLocalhost) {
-
-            //Auto på s7 hjemme (helledusseda): 192.186.10.106
-            //Test fobindelse til sig selv
-            if (phoneModel.equals("SM-G930F"))
-                IP_ADDRESS = "10.80.0.138"; //galaxy s7
-            else if (phoneModel.equals("SM-G970F"))
-                IP_ADDRESS = "10.212.178.72"; //galaxy s10e
-                //Galaxy s10e IOT 10.90.17.158
-            else
-                IP_ADDRESS = "10.0.2.15"; //Emulator SDK 15
-        }
 
         startKlient = findViewById(R.id.button);
         startKlient.setOnClickListener(this);
@@ -78,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startServer.setOnClickListener(this);
 
         ipInfo = findViewById(R.id.ipinfo);
-        //startKlient.setEnabled(false);
+        startKlient.setEnabled(false);
 
         //TODO:
         // ny knap som lukker klienten og starter en ny
@@ -113,41 +93,59 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     class MinServerTråd implements Runnable {
-    @Override
-    public void run() {
-        Socket socket;
-        try {
-            serverIP = getLocalIpAddress();
-            update("SERVER: Automatic SERVER IP: " + serverIP);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    IP_ADDRESS = getLocalIpAddress();
+                    update("SERVER: Automatic SERVER IP: " + IP_ADDRESS);
+                    //Galaxy s10e IOT 10.90.17.158
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+
+
+
+                try {
+
+                    // update("SERVER: starting serversocket");
+                    ServerSocket serverSocket = new ServerSocket(4444);
+
+                    update("SERVER: start listening..");
+                    Socket klientSocket = serverSocket.accept();
+                    update("SERVER connection accepted");
+                    DataInputStream instream = new DataInputStream(klientSocket.getInputStream());
+                    DataOutputStream outstream = new DataOutputStream(klientSocket.getOutputStream());
+                    //Scanner input = new Scanner(System.in);
+
+                    boolean carryOn = true;
+                    while(carryOn) {
+
+                        String str = (String) instream.readUTF();
+                        update("Client says: " + str);
+                        //update("Type message (Enter sends message)");
+                        String answer = "i'stupid"; //do something interesting here
+                        outstream.writeUTF(answer);
+                        outstream.flush();
+                        carryOn = !str.equalsIgnoreCase("bye");
+                    }
+                    serverSocket.close();
+                    klientSocket.close();
+                    instream.close();
+                    //input.close();
+                } catch (
+                        IOException e) {
+                    update("oops!!");
+                    throw new RuntimeException(e);
+
+
+                }
+                //update("SERVER (later): Automatic SERVER IP: " + IP_ADDRESS);
+            }
         }
-        try {
-            update("SERVER: starting serversocket");
-            ServerSocket server = new ServerSocket(PORT);
-
-            update("SERVER: start listening..");
-            socket = server.accept();
-            update("SERVER connection accepted");
-            PrintWriter output = new PrintWriter(socket.getOutputStream());
-            output.write("BESKEDEN KOMMER HER");
-            update("SERVER: Besked skrevet til output");
-            //Thread.sleep(50);
-            // output.write("NY BESKED");
-            output.flush();
-            update("SERVER: flush");
-
-
-        } catch (
-                IOException e) {
-            update("oops!!");
-            throw new RuntimeException(e);
-
-
-        }
-        update("SERVER (later): Automatic SERVER IP: " + serverIP);
     }
-}    private String getLocalIpAddress() throws UnknownHostException {
+
+private String getLocalIpAddress() throws UnknownHostException {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         assert wifiManager != null;
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
@@ -161,7 +159,7 @@ class MinKlientTråd  implements Runnable {
         Socket socket;
         try {
 
-            update("CLIENT: starting client socket on "+addresses[clicks]);
+            update("CLIENT: starting client socket on "+IP_ADDRESS);
 
 
             //socket = new Socket(serverIP, 5050);
@@ -175,12 +173,12 @@ class MinKlientTråd  implements Runnable {
             }*/
             //Test
             //IP_ADDRESS = "192.168.50.239"; //DTU DELL
-            socket = new Socket(addresses[1], PORT);//Fra emulator, indstillinger
+            socket = new Socket(IP_ADDRESS, PORT);//Fra emulator, indstillinger
 
-            update("CLIENT: client connected to "+ addresses[clicks]);
-            update("Clicks: "+clicks);
-            clicks++;
-            if(clicks == addresses.length) clicks = 0;
+            update("CLIENT: client connected to "+ IP_ADDRESS);
+
+
+
              input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 update("CLIENT: Got inputstream");
                 } catch (IOException e) {
@@ -192,20 +190,6 @@ class MinKlientTråd  implements Runnable {
         while (true) {
 
                 try {
-                    boolean klar = input.ready();
-                    //try hard
-                    if (retryClient)
-                        klar = true;
-                    if (!klar ){
-                        update("not ready");
-                        retry();
-                        retryClient = true;
-                        break;
-                    }
-                    else{
-                        if(!retryClient) update("Ready to read");
-                        else update("Force read. Ready now? "+ input.ready());
-                    }
                     final String message = input.readLine();
                     if (message != null) {
                     //    MainActivity.this.runOnUiThread(new Runnable() {
@@ -215,7 +199,10 @@ class MinKlientTråd  implements Runnable {
                           //  }
                        // });
                     }
-                    else break;
+                    else {
+                        update("messages was null");
+                        break;
+                    }
 
                 } catch (
                         IOException e) {
