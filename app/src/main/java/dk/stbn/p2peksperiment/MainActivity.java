@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //state
     boolean ip_submitted = false;
+    boolean iAmServer = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,10 +59,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startServer = findViewById(R.id.button2);
         startServer.setOnClickListener(this);
         ipInfo = findViewById(R.id.ipinfo);
-        startKlient.setEnabled(false);
+        //startKlient.setEnabled(false);
         send = findViewById(R.id.send);
         send.setOnClickListener(this);
         messageField = findViewById(R.id.besked);
+        messageField.setText("10.90.17.158");
 
 
 
@@ -75,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // new Handler().postDelayed(new Runnable() {
             //   @Override
             // public void run() {
-
+            iAmServer = false;
             klientTråd.start();
             //}
             //}, 50); //din kode køres om 50 milisekunder
@@ -84,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             info += "I AM CLIENT\n";
         }
         else if (view == startServer){
-
+            iAmServer = true;
             serverTråd.start();
             startServer.setEnabled(false);
             startKlient.setEnabled(false);
@@ -92,8 +94,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         else if (view == send){
             theMessage = messageField.getText().toString();
-            serverTråd.notify();
-        }
+
+                if (iAmServer) {
+                    synchronized (serverTråd) {
+                        update("onclick notify server");
+                        serverTråd.notify();
+                    }
+                }
+                else {
+                    synchronized (klientTråd) {
+                        update("onclick notify client");
+                        klientTråd.notify();
+                    }
+                }
+            }
+
     }
 
     class MinServerTråd implements Runnable {
@@ -170,12 +185,22 @@ private String getLocalIpAddress() throws UnknownHostException {
                 //if (ip.equalsIgnoreCase("c"))
                 //    ip = "10.90.17.181";
 
-                update("CLIENT: starting client socket ");
+
                 if(!ip_submitted){
                     update("Please submit an IP-address");
-                    wait();
-                    IP_ADDRESS = theMessage;
-                    ip_submitted = true;
+                  synchronized (this) {
+                      try{
+                          update("waiting for ip...");
+                          wait();
+                          update("after wait");
+                          IP_ADDRESS = theMessage;
+                          ip_submitted = true;
+                          update("CLIENT: starting client socket ");
+                      } catch (InterruptedException e) {
+                          throw new RuntimeException(e);
+                      }
+                  }
+
                 }
                 Socket klientsocket = new Socket(IP_ADDRESS, 4444);//Fra emulator, indstillinger
 
