@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,38 +33,39 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    String serverIP;
-    Button startKlient, startServer;
-    TextView ipInfo;
 
+    // UI-elements
+    Button startKlient, startServer, send;
+    TextView ipInfo;
+    EditText messageField;
+
+    // Logging/status messages
     String info  = "LOG: \n";
 
+    //Global data
     final int PORT = 4444;
+    String IP_ADDRESS = "127.0.0.1"; //Default localhost - not really useful
+    ArrayList<String> ips = new ArrayList();
 
-    String IP_ADDRESS = "127.0.0.1";
-
-
-
+    String serverMessage;
+    Thread serverTråd = new Thread(new MinServerTråd());
+    Thread klientTråd = new Thread(new MinKlientTråd());
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String phoneModel = Build.MODEL;
-
+        //String phoneModel = Build.MODEL;
 
         startKlient = findViewById(R.id.button);
         startKlient.setOnClickListener(this);
         startServer = findViewById(R.id.button2);
         startServer.setOnClickListener(this);
-
         ipInfo = findViewById(R.id.ipinfo);
         startKlient.setEnabled(false);
-
-        //TODO:
-        // ny knap som lukker klienten og starter en ny
-        //Både skriv og læs på klient og server - pakkes i metoder!! Kræver det Handler?
-
+        send = findViewById(R.id.send);
+        send.setOnClickListener(this);
+        messageField = findViewById(R.id.besked);
 
 
 
@@ -77,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // new Handler().postDelayed(new Runnable() {
             //   @Override
             // public void run() {
-            Thread klientTråd = new Thread(new MinKlientTråd());
+
             klientTråd.start();
             //}
             //}, 50); //din kode køres om 50 milisekunder
@@ -85,10 +87,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
         else if (view == startServer){
-            Thread serverTråd = new Thread(new MinServerTråd());
+
             serverTråd.start();
             startServer.setEnabled(false);
             startKlient.setEnabled(true);
+        }
+        else if (view == send){
+            serverMessage = messageField.getText().toString();
+            serverTråd.notify();
         }
     }
 
@@ -124,7 +130,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         String str = (String) instream.readUTF();
                         update("Client says: " + str);
                         //update("Type message (Enter sends message)");
-                        String answer = "i'stupid"; //do something interesting here
+                        wait();
+                        String answer = serverMessage;//do something interesting here
                         outstream.writeUTF(answer);
                         outstream.flush();
                         carryOn = !str.equalsIgnoreCase("bye");
@@ -139,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     throw new RuntimeException(e);
 
 
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
                 //update("SERVER (later): Automatic SERVER IP: " + IP_ADDRESS);
             }
@@ -158,13 +167,13 @@ private String getLocalIpAddress() throws UnknownHostException {
 
             try {
                 //Scanner input = new Scanner(System.in);
-                update("Please write ip of server (Type 'c' to use hardcoded: 10.90.17.181) ");
+                //update("Please write ip of server (Type 'c' to use hardcoded: 10.90.17.181) ");
                 //String ip = input.nextLine();
                 //if (ip.equalsIgnoreCase("c"))
                 //    ip = "10.90.17.181";
 
                 update("CLIENT: starting client socket ");
-                //Socket klientsocket = new Socket(ip, 4444);//Fra emulator, indstillinger
+                Socket klientsocket = new Socket(IP_ADDRESS, 4444);//Fra emulator, indstillinger
 
                 update("CLIENT: client connected ");
 
@@ -197,51 +206,13 @@ private String getLocalIpAddress() throws UnknownHostException {
                 throw new RuntimeException(e);
             }
 
- /*           boolean success = false;
-            update("CLIENT: Try reading");
-            while (true) {
-
-                try {
-                    boolean klar = input.ready();
-                    //try hard
-                    if (retryClient)
-                        klar = true;
-                    if (!klar ){
-                        update("not ready");
-                        //retry();
-                        retryClient = true;
-                        break;
-                    }
-                    else{
-                        if(!retryClient) update("Ready to read");
-                        else update("Force read. Ready now? "+ input.ready());
-                    }
-                    final String message = input.readLine();
-                    System.out.println(message);
-                    if (message != null) {
-                        //    MainActivity.this.runOnUiThread(new Runnable() {
-                        //      @Override
-                        //    public void run() {
-                        update("CLIENT: SUCCESS!!! Server sent me this: " + message + " ");
-                        success = true;
-                        //  }
-                        // });
-                    }
-                    else break;
-
-                } catch (
-                        IOException e) {
-                    update("CLIENT: oops ioexception!!");
-                    throw new RuntimeException(e);
-                }
-                update("end loop");
-            }
-            update(success ? "CLIENT: Done reading" : "ØV ikke klar");*/
         }//Run()
     } //class MinKlientTråd
 
     public void update (String besked){
         System.out.println(besked);
+
+        //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
@@ -254,15 +225,5 @@ private String getLocalIpAddress() throws UnknownHostException {
 
 
 
-    public void retry (){
 
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                startKlient.setEnabled(true);
-
-            }
-        });
-
-    }
 }
