@@ -4,8 +4,6 @@ package dk.stbn.p2peksperiment;
 
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,13 +14,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -30,7 +24,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -47,9 +40,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     String IP_ADDRESS = "127.0.0.1"; //Default localhost - not really useful
     ArrayList<String> ips = new ArrayList();
 
-    String serverMessage;
+    String theMessage;
     Thread serverTråd = new Thread(new MinServerTråd());
     Thread klientTråd = new Thread(new MinKlientTråd());
+
+    //state
+    boolean ip_submitted = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,17 +79,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             klientTråd.start();
             //}
             //}, 50); //din kode køres om 50 milisekunder
-            //startKlient.setEnabled(false);
-
+            startKlient.setEnabled(false);
+            startServer.setEnabled(false);
+            info += "I AM CLIENT\n";
         }
         else if (view == startServer){
 
             serverTråd.start();
             startServer.setEnabled(false);
-            startKlient.setEnabled(true);
+            startKlient.setEnabled(false);
+            info += "I AM SERVER\n";
         }
         else if (view == send){
-            serverMessage = messageField.getText().toString();
+            theMessage = messageField.getText().toString();
             serverTråd.notify();
         }
     }
@@ -131,7 +129,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         update("Client says: " + str);
                         //update("Type message (Enter sends message)");
                         wait();
-                        String answer = serverMessage;//do something interesting here
+                        String answer = theMessage;//do something interesting here
                         outstream.writeUTF(answer);
                         outstream.flush();
                         carryOn = !str.equalsIgnoreCase("bye");
@@ -173,6 +171,12 @@ private String getLocalIpAddress() throws UnknownHostException {
                 //    ip = "10.90.17.181";
 
                 update("CLIENT: starting client socket ");
+                if(!ip_submitted){
+                    update("Please submit an IP-address");
+                    wait();
+                    IP_ADDRESS = theMessage;
+                    ip_submitted = true;
+                }
                 Socket klientsocket = new Socket(IP_ADDRESS, 4444);//Fra emulator, indstillinger
 
                 update("CLIENT: client connected ");
@@ -184,7 +188,8 @@ private String getLocalIpAddress() throws UnknownHostException {
                 while(carryOn) {
 
                     //update("Type message (Enter sends the message)");
-                   // String besked = input.nextLine();
+                  wait();
+                   String besked = theMessage;
                     //out.writeUTF(besked);
                     //update("CLIENT: wrote to outputstream");
 
@@ -203,6 +208,8 @@ private String getLocalIpAddress() throws UnknownHostException {
                 klientsocket.close();
                 update("CLIENT: closed socket");
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
