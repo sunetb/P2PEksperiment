@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //startKlient.setEnabled(false);
         send = findViewById(R.id.send);
         send.setOnClickListener(this);
+        send.setEnabled(false);
         messageField = findViewById(R.id.besked);
         messageField.setText("192.168.10.118");
 
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             startKlient.setEnabled(false);
             startServer.setEnabled(false);
             info += "I AM CLIENT\n";
+            send.setEnabled(true);
         }
         else if (view == startServer){
             iAmServer = true;
@@ -91,25 +93,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             startServer.setEnabled(false);
             startKlient.setEnabled(false);
             info += "I AM SERVER\n";
+            send.setEnabled(false);
+            messageField.setText("");
         }
         else if (view == send){
             theMessage = messageField.getText().toString();
-
+            messageField.setText("");
+            messageField.setHint("type message here...");
                 if (iAmServer) {
                     synchronized (serverTråd) {
-                        update("onclick notify server");
+                        //update("onclick notify server");
                         serverTråd.notify();
                     }
                 }
                 else {
                     synchronized (klientTråd) {
-                        update("onclick notify client");
+                        //update("onclick notify client");
                         klientTråd.notify();
-                        update("forbi notify");
+                        //update("forbi notify");
                     }
                 }
             }
-
+            send.setEnabled(false);
     }
 
     class MinServerTråd implements Runnable {
@@ -143,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         String str = (String) instream.readUTF();
                         update("Client says: " + str);
+                        able(true);
                         //update("Type message (Enter sends message)");
                         synchronized (serverTråd){
                             serverTråd.wait();
@@ -188,9 +194,9 @@ private String getLocalIpAddress() throws UnknownHostException {
                     update("Please submit an IP-address");
                   synchronized (klientTråd) {
                       try{
-                          update("waiting for ip...");
+                          //update("waiting for ip...");
                           klientTråd.wait();
-                          update("after wait");
+                          //update("after wait");
 
 
                       } catch (InterruptedException e) {
@@ -212,12 +218,10 @@ private String getLocalIpAddress() throws UnknownHostException {
                 //update("CLIENT: made outputstream");
                 boolean carryOn = true;
                 while(carryOn) {
-                    String messageFromServer = instream.readUTF();
-                    update("Server says: " +messageFromServer);
-
+                    able(true);
                    synchronized (klientTråd) {
                     try{
-                        update("venter på input");
+                        update("Venter på input fra DIG! (klient)");
                         klientTråd.wait();
                         //update("efter wait, ALMINDELIG LÆSNING");
                    } catch (InterruptedException e) {
@@ -225,11 +229,12 @@ private String getLocalIpAddress() throws UnknownHostException {
                     }
                    }
                    String besked = theMessage;
-                    out.writeUTF(besked);
-                    //update("CLIENT: wrote to outputstream");
-
+                   out.writeUTF(besked);
+                   //update("CLIENT: wrote to outputstream");
                     out.flush();
-                    update("CLIENT: flushed");
+                    //update("CLIENT: flushed");
+                    String messageFromServer = instream.readUTF();
+                    update("Server says: " +messageFromServer);
 
                     carryOn = !messageFromServer.equalsIgnoreCase("bye");
                 }
@@ -256,7 +261,7 @@ private String getLocalIpAddress() throws UnknownHostException {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                info += besked + "\n";
+                info = besked + "\n" + info ;
                 ipInfo.setText(info);
             }
         });
@@ -264,6 +269,13 @@ private String getLocalIpAddress() throws UnknownHostException {
     }
 
 
-
+    void able(boolean enabled){
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                send.setEnabled(enabled);
+            }
+        });
+    }
 
 }
