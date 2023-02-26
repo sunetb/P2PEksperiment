@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         send.setOnClickListener(this);
         send.setEnabled(false);
         messageField = findViewById(R.id.besked);
-        messageField.setText("192.168.10.118");
+        messageField.setText("192.168.10.106");
 
 
 
@@ -114,7 +114,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
             }
-            send.setEnabled(false);
+            if (ip_submitted)
+                send.setEnabled(false);
     }
 
     class MinServerTråd implements Runnable {
@@ -194,9 +195,9 @@ private String getLocalIpAddress() throws UnknownHostException {
                     update("Please submit an IP-address");
                   synchronized (klientTråd) {
                       try{
-                          //update("waiting for ip...");
+                          update("waiting for ip...");
                           klientTråd.wait();
-                          //update("after wait");
+                          update("after wait");
 
 
                       } catch (InterruptedException e) {
