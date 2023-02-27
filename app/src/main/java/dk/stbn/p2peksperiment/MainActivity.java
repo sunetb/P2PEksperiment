@@ -29,12 +29,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // UI-elements
     private Button startClient, startServer, send;
-    private TextView ipInfo;
+    private TextView serverInfoTv, clientInfoTv;
     private EditText messageField;
 
     // Logging/status messages
-    private String info  = "LOG: ";
-
+    private String serverinfo = "SERVER LOG:";
+    private String clientinfo = "CLIENT LOG: ";
     //Global data
     private final int PORT = 4444;
     private String THIS_IP_ADDRESS = ""; //Default localhost - not really useful
@@ -59,7 +59,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startClient.setOnClickListener(this);
         startServer = findViewById(R.id.button2);
         startServer.setOnClickListener(this);
-        ipInfo = findViewById(R.id.ipinfo);
+        serverInfoTv = findViewById(R.id.serveroutput);
+        clientInfoTv = findViewById(R.id.clientoutput);
         send = findViewById(R.id.send);
         send.setOnClickListener(this);
         send.setEnabled(false); //Disable Send button until connection is established
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void addHardcodedIPs() {
         ips.add("192.168.10.106");//Sune home
+        ips.add("192.168.10.187");//Sune home
         ips.add("192.168.10.118");//Sune home
         ips.add("10.90.17.158");//RucIOT
 
@@ -87,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if(!ip_submitted){
 
-                update("Enter server IP-address");
+                sUpdate("Enter server IP-address");
                 messageField.setHint("Enter server-IP-address");
                 startClient.setEnabled(false);
                 send.setText("Remote IP");
@@ -96,19 +98,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             klientThread.start();
             startClient.setEnabled(false); //Don't start two clients
             //startServer.setEnabled(false);
-            info += "- - - CLIENT STARTED - - - \n";
+            serverinfo += "- - - CLIENT STARTED - - - \n";
 
         }
         else if (view == startServer){
             iAmServer = true;
 
             serverThread.start();
-            info += "- - - SERVER STARTED - - -\n";
+            serverinfo += "- - - SERVER STARTED - - -\n";
 
             //Obtain my local IP-address
             try {
                 THIS_IP_ADDRESS = getLocalIpAddress();
-                update("SERVER: Automatic SERVER IP: " + THIS_IP_ADDRESS);
+                sUpdate("SERVER: Automatic SERVER IP: " + THIS_IP_ADDRESS);
                 //Galaxy s10e IOT
             } catch (UnknownHostException e) {
                 e.printStackTrace();
@@ -159,9 +161,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     // update("SERVER: starting serversocket");
                     ServerSocket serverSocket = new ServerSocket(4444);
-                    update("SERVER: start listening..");
+                    sUpdate("SERVER: start listening..");
                     Socket klientSocket = serverSocket.accept();
-                    update("SERVER connection accepted");
+                    sUpdate("SERVER connection accepted");
 
                     DataInputStream instream = new DataInputStream(klientSocket.getInputStream());
                     DataOutputStream outstream = new DataOutputStream(klientSocket.getOutputStream());
@@ -171,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     while(carryOn) {
 
                         String str = (String) instream.readUTF();
-                        update("Client says: " + str);
+                        sUpdate("Client says: " + str);
                         able(true);
                         synchronized (serverThread){
                             serverThread.wait(); //Waiting for user input
@@ -183,16 +185,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                     //Closing everything down
                     serverSocket.close();
-                    update("SERVER: Server socket closed");
+                    sUpdate("SERVER: Server socket closed");
                     klientSocket.close();
-                    update("SERVER: Client socket closed");
+                    sUpdate("SERVER: Client socket closed");
                     instream.close();
-                    update("SERVER: inputstream closed");
+                    sUpdate("SERVER: inputstream closed");
                     outstream.close();
-                    update("SERVER: outputstream closed");
+                    sUpdate("SERVER: outputstream closed");
                 } catch (
                         IOException e) {
-                    update("oops!!");
+                    sUpdate("oops!!");
                     throw new RuntimeException(e);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -200,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
+
 //Copied from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
 private String getLocalIpAddress() throws UnknownHostException {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
@@ -213,42 +216,42 @@ private String getLocalIpAddress() throws UnknownHostException {
         public void run() {
 
             try {
-                update("CLIENT: starting client socket ");
+                cUpdate("CLIENT: starting client socket ");
                 Socket connectionToServer = new Socket(REMOTE_IP_ADDRESS, 4444);
-                update("CLIENT: client connected ");
+                cUpdate("CLIENT: client connected ");
 
                 DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
-                update(""+instream);
+                //cUpdate(""+instream);
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
-                //update("CLIENT: made outputstream");
+                //cUpdate("CLIENT: made outputstream");
                 boolean carryOn = true;
                 while(carryOn) {
                     able(true);
                     synchronized (klientThread) {
                     try{
-                        update("Waiting for your message...");
+                        cUpdate("Waiting for your message...");
                         klientThread.wait();
-                        //update("after wait");
+                        //cUpdate("after wait");
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                     }
                     String besked = theMessage;
                     out.writeUTF(besked);
-                    //update("CLIENT: wrote to outputstream");
+                    //cUpdate("CLIENT: wrote to outputstream");
                     out.flush();
-                    //update("CLIENT: flushed");
+                    //cUpdate("CLIENT: flushed");
                     String messageFromServer = instream.readUTF();
-                    update("Server says: " +messageFromServer);
+                    cUpdate("Server says: " +messageFromServer);
 
                     carryOn = !messageFromServer.equalsIgnoreCase("bye");
                 }
                 instream.close();
-                update("CLIENT: closed inputstream");
+                cUpdate("CLIENT: closed inputstream");
                 out.close();
-                update("CLIENT: closed outputstream");
+                cUpdate("CLIENT: closed outputstream");
                 connectionToServer.close();
-                update("CLIENT: closed socket");
+                cUpdate("CLIENT: closed socket");
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -258,15 +261,27 @@ private String getLocalIpAddress() throws UnknownHostException {
         }//Run()
     } //class MinKlientTråd
 
-    public void update (String besked){
-        System.out.println(besked);
+    public void sUpdate(String message){
+        //Run this code on UI-thread
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                serverinfo = message + "\n" + serverinfo;
+                serverInfoTv.setText(serverinfo);
+            }
+        });
+
+    }
+
+    public void cUpdate(String message){
+        System.out.println(message);
 
         //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                info = besked + "\n" + info ;
-                ipInfo.setText(info);
+                clientinfo = message + "\n" + clientinfo;
+                clientInfoTv.setText(clientinfo);
             }
         });
 
