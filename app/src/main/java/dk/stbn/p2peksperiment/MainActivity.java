@@ -7,11 +7,13 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PersistableBundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.DataInputStream;
@@ -52,17 +54,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //System.out.println("SavedInstance: "+savedInstanceState);
         setContentView(R.layout.activity_main);
 
         //UI boilerplate
         startClient = findViewById(R.id.button);
-        startClient.setOnClickListener(this);
         startServer = findViewById(R.id.button2);
-        startServer.setOnClickListener(this);
+
         serverInfoTv = findViewById(R.id.serveroutput);
         clientInfoTv = findViewById(R.id.clientoutput);
         send = findViewById(R.id.send);
-        send.setOnClickListener(this);
+        startClient.setOnClickListener(this);
+        startServer.setOnClickListener(this);
+        send.setOnClickListener(view -> {
+
+        });
+
         send.setEnabled(false); //Disable Send button until connection is established
         messageField = findViewById(R.id.besked);
         messageField.setText("192.168.10.106");
@@ -71,6 +78,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         addHardcodedIPs();
     }
+
+
+
 
     private void addHardcodedIPs() {
         ips.add("192.168.10.106");//Sune home
@@ -132,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 REMOTE_IP_ADDRESS = theMessage;
                 startClient.setEnabled(true);
                 send.setEnabled(false);
+                return;
             }
 
             if (iAmServer) {
@@ -147,10 +158,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //update("forbi notify");
                 }
             }
-            }
+        }
 
 
-    }
+    }//onclick
 
     class MyServerThread implements Runnable {
         @Override
@@ -159,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             while (true) {
 
                 try {
-                    // update("SERVER: starting serversocket");
+                    //sUpdate("SERVER: starting serversocket");
                     ServerSocket serverSocket = new ServerSocket(4444);
                     sUpdate("SERVER: start listening..");
                     Socket klientSocket = serverSocket.accept();
@@ -192,8 +203,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     sUpdate("SERVER: inputstream closed");
                     outstream.close();
                     sUpdate("SERVER: outputstream closed");
-                } catch (
-                        IOException e) {
+                } catch (IOException e) {
                     sUpdate("oops!!");
                     throw new RuntimeException(e);
                 } catch (InterruptedException e) {
@@ -261,6 +271,7 @@ private String getLocalIpAddress() throws UnknownHostException {
         }//Run()
     } //class MinKlientTråd
 
+    //The below three methods are for updating UI-elements on the main thread
     public void sUpdate(String message){
         //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -272,7 +283,6 @@ private String getLocalIpAddress() throws UnknownHostException {
         });
 
     }
-
     public void cUpdate(String message){
         System.out.println(message);
 
@@ -286,8 +296,6 @@ private String getLocalIpAddress() throws UnknownHostException {
         });
 
     }
-
-
     void able(boolean enabled){
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
