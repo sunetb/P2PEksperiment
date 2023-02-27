@@ -47,7 +47,7 @@
 
             <View
                 android:layout_width="0dp"
-                android:layout_weight="33"
+                android:layout_weight="10"
                 android:layout_height="match_parent">
 
             </View>
@@ -60,7 +60,11 @@
                 android:text="Start server" />
 
         </LinearLayout>
-
+    <TextView
+        android:text="Server"
+        android:background="#eab676"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
         <ScrollView
             android:id="@+id/scrollViewServer"
             android:layout_width="match_parent"
@@ -79,7 +83,11 @@
                     android:text="Hello World!" />
             </LinearLayout>
         </ScrollView>
-
+    <TextView
+        android:text="Client"
+        android:background="#eab676"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
     <ScrollView
         android:id="@+id/scrollViewClient"
         android:layout_width="match_parent"

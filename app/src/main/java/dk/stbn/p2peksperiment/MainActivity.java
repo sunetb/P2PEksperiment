@@ -7,13 +7,11 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.PersistableBundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.DataInputStream;
@@ -39,15 +37,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String clientinfo = "CLIENT LOG: ";
     //Global data
     private final int PORT = 4444;
-    private String THIS_IP_ADDRESS = ""; //Default localhost - not really useful
+    private String THIS_IP_ADDRESS = "";
     private String REMOTE_IP_ADDRESS = "";
     private ArrayList<String> ips = new ArrayList();
 
-    private String theMessage;
+    private String theMessage = "";
     private Thread serverThread = new Thread(new MyServerThread());
-    private Thread klientThread = new Thread(new MyClientThread());
+    private Thread clientThread = new Thread(new MyClientThread());
 
-    //---Some state---
+    //---Some UI state---
     private boolean ip_submitted = false;
     private boolean iAmServer = false; //TODO: only useful when testing
 
@@ -66,9 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         send = findViewById(R.id.send);
         startClient.setOnClickListener(this);
         startServer.setOnClickListener(this);
-        send.setOnClickListener(view -> {
-
-        });
+        send.setOnClickListener(this);
 
         send.setEnabled(false); //Disable Send button until connection is established
         messageField = findViewById(R.id.besked);
@@ -105,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 send.setText("Remote IP");
                 return;
             }
-            klientThread.start();
+            clientThread.start();
             startClient.setEnabled(false); //Don't start two clients
             //startServer.setEnabled(false);
             serverinfo += "- - - CLIENT STARTED - - - \n";
@@ -152,9 +148,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
             else {
-                synchronized (klientThread) {
+                synchronized (clientThread) {
                     //update("onclick notify client");
-                    klientThread.notify();
+                    clientThread.notify();
                     //update("forbi notify");
                 }
             }
@@ -237,10 +233,10 @@ private String getLocalIpAddress() throws UnknownHostException {
                 boolean carryOn = true;
                 while(carryOn) {
                     able(true);
-                    synchronized (klientThread) {
+                    synchronized (clientThread) {
                     try{
                         cUpdate("Waiting for your message...");
-                        klientThread.wait();
+                        clientThread.wait();
                         //cUpdate("after wait");
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
