@@ -9,58 +9,9 @@
         android:orientation="vertical"
         tools:context=".MainActivity">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
 
-            android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/servermessagefield"
-                android:layout_width="0dp"
-                android:layout_weight="75"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:inputType="textPersonName" />
-
-            <Button
-                android:id="@+id/sendserver"
-                android:layout_width="0dp"
-                android:layout_weight="25"
-                android:layout_height="wrap_content"
-                android:text="Send" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/button"
-                android:layout_width="0dp"
-                android:layout_weight="33"
-                android:layout_height="wrap_content"
-                android:text="Start klient" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_weight="10"
-                android:layout_height="match_parent">
-
-            </View>
-
-            <Button
-                android:id="@+id/button2"
-                android:layout_height="wrap_content"
-                android:layout_width="0dp"
-                android:layout_weight="33"
-                android:text="Start server" />
-
-        </LinearLayout>
-    <TextView
+            <TextView
         android:text="Server"
         android:background="#eab676"
         android:layout_width="match_parent"
@@ -110,6 +61,28 @@
             android:text="Send" />
 
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button"
+            android:layout_width="0dp"
+            android:layout_weight="33"
+            android:layout_height="wrap_content"
+            android:text="Start client" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_weight="10"
+            android:layout_height="match_parent">
+
+        </View>
+
+    </LinearLayout>
+
     <ScrollView
         android:id="@+id/scrollViewClient"
         android:layout_width="match_parent"
