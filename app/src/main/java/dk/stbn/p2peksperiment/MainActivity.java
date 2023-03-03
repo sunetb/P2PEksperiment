@@ -23,30 +23,27 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     // UI-elements
-    private Button startClient, clientSend;
+    private Button startClient, submitIP;
     private TextView serverInfoTv, clientInfoTv;
-    private EditText clientMessageField;
+    private EditText ipInputField;
 
     // Logging/status messages
     private String serverinfo = "SERVER LOG:";
     private String clientinfo = "CLIENT LOG: ";
-    //Global data
+
+    // Global data
     private final int PORT = 4444;
     private String THIS_IP_ADDRESS = "";
     private String REMOTE_IP_ADDRESS = "";
-    private ArrayList<String> ips = new ArrayList();
-
-    //private String theMessage = ""; //Where user input is stored
     private Thread serverThread = new Thread(new MyServerThread());
     private Thread clientThread = new Thread(new MyClientThread());
 
-    //---Some state---
+    // Some state
     private boolean ip_submitted = false;
     boolean carryOn = true;
     boolean clientStarted = false;
@@ -59,14 +56,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startClient = findViewById(R.id.button);
         serverInfoTv = findViewById(R.id.serveroutput);
         clientInfoTv = findViewById(R.id.clientoutput);
-        clientSend = findViewById(R.id.sendclient);
+        submitIP = findViewById(R.id.sendclient);
 
         startClient.setOnClickListener(this);
         startClient.setEnabled(false);
-        clientSend.setOnClickListener(this);
+        submitIP.setOnClickListener(this);
 
-        clientMessageField = findViewById(R.id.clientmessagefield);
-        clientMessageField.setHint("Submit IP-address");
+        ipInputField = findViewById(R.id.clientmessagefield);
+        ipInputField.setHint("Submit IP-address");
 
         THIS_IP_ADDRESS = getLocalIpAddress();
         sUpdate("This IP is "+ THIS_IP_ADDRESS);
@@ -74,11 +71,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         serverinfo += "- - - SERVER STARTED - - -\n";
 
     }
-
-
-
-
-
 
     @Override
     public void onClick(View view) {
@@ -94,13 +86,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 carryOn = false;
             }
         }
-        else if(view == clientSend) {
+        else if(view == submitIP) {
             if (!ip_submitted) {
                 ip_submitted = true;
-                REMOTE_IP_ADDRESS = clientMessageField.getText().toString();
+                REMOTE_IP_ADDRESS = ipInputField.getText().toString();
                 startClient.setEnabled(true);
-                clientSend.setEnabled(false);
-                return;
+                submitIP.setEnabled(false);
             }
         }
 
@@ -113,7 +104,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             while (true) {
 
                 try {
-                    //sUpdate("SERVER: starting serversocket");
                     ServerSocket serverSocket = new ServerSocket(4444);
                     sUpdate("SERVER: start listening..");
                     Socket klientSocket = serverSocket.accept();
@@ -176,7 +166,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 cUpdate("CLIENT: client connected ");
 
                 DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
-                //cUpdate(""+instream);
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
                 boolean carryOn = true;
                 while(carryOn) {
@@ -211,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             throw new RuntimeException(e);
         }
     }
+
     //The below methods are for updating UI-elements on the main thread
     public void sUpdate(String message){
         //Run this code on UI-thread

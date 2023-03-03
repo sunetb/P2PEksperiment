@@ -9,9 +9,7 @@
         android:orientation="vertical"
         tools:context=".MainActivity">
 
-
-
-            <TextView
+        <TextView
         android:text="Server"
         android:background="#eab676"
         android:layout_width="match_parent"
@@ -58,19 +56,23 @@
             android:layout_width="0dp"
             android:layout_weight="25"
             android:layout_height="wrap_content"
-            android:text="Send" />
+            android:text="Submit" />
 
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
         android:orientation="horizontal">
+        <View
+            android:layout_width="0dp"
+            android:layout_weight="10"
+            android:layout_height="match_parent">
 
+        </View>
         <Button
             android:id="@+id/button"
             android:layout_width="0dp"
-            android:layout_weight="33"
+            android:layout_weight="80"
             android:layout_height="wrap_content"
             android:text="Start client" />
 
@@ -97,8 +99,7 @@
             <TextView
                 android:id="@+id/clientoutput"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hello World!" />
+                android:layout_height="wrap_content" />
         </LinearLayout>
     </ScrollView>
     </LinearLayout>
