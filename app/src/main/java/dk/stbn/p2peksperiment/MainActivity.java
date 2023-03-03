@@ -57,16 +57,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         serverInfoTv = findViewById(R.id.serveroutput);
         clientInfoTv = findViewById(R.id.clientoutput);
         submitIP = findViewById(R.id.sendclient);
+        ipInputField = findViewById(R.id.clientmessagefield);
 
+        //Setting click-listeners on buttons
         startClient.setOnClickListener(this);
-        startClient.setEnabled(false);
         submitIP.setOnClickListener(this);
 
-        ipInputField = findViewById(R.id.clientmessagefield);
+        //Setting some UI state
         ipInputField.setHint("Submit IP-address");
+        startClient.setEnabled(false); //deactivates the button
 
+        //Getting the IP address of the device
         THIS_IP_ADDRESS = getLocalIpAddress();
         sUpdate("This IP is "+ THIS_IP_ADDRESS);
+
+        //Starting the server thread
         serverThread.start();
         serverinfo += "- - - SERVER STARTED - - -\n";
 
@@ -83,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startClient.setText("Stop");
             }
             else {
-                carryOn = false;
+                carryOn = false; //NOT a good solution
             }
         }
         else if(view == submitIP) {
@@ -113,9 +118,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     DataOutputStream outstream = new DataOutputStream(klientSocket.getOutputStream());
 
                     //Start conversation
-
                     while(carryOn) {
-
                         String str = (String) instream.readUTF();
                         sUpdate("Client says: " + str);
                         String answer = getFood();
