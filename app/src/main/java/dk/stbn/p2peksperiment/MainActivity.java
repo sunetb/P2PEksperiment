@@ -204,6 +204,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+
     //The below two methods are for updating UI-elements on the main thread
 
     //Server update TexView
