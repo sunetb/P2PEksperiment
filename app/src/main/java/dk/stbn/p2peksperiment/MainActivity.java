@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // Some state
     private boolean ip_submitted = false;
-    boolean carryOn = true;
+    private boolean carryOn = true;
     boolean clientStarted = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -195,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }//run()
     } //class MyClientThread
 
-
-    void waitABit(){
+    //Wait by setting the thread to sleep for 1,5 seconds
+    private void waitABit(){
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) {
@@ -204,8 +204,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    //The below methods are for updating UI-elements on the main thread
-    public void sUpdate(String message){
+    //The below two methods are for updating UI-elements on the main thread
+
+    //Server update TexView
+    private void sUpdate(String message){
         //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
@@ -216,7 +218,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
     }
-    public void cUpdate(String message){
+
+    //Client update TextView
+    private void cUpdate(String message){
         System.out.println(message);
 
         //Run this code on UI-thread
@@ -227,20 +231,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 clientInfoTv.setText(clientinfo);
             }
         });
-
     }
 
     //Below is not really interesting. Just for testing with animals and food
 
     public String getAnimal() {
         int max = animals.length;
-
         int r = new Random().nextInt(max);
         return animals[r];
     }
     public String getFood() {
         int max = food.length;
-        int min = 0;
         int r = new Random().nextInt(max);
         return food[r];
     }
