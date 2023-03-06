@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
-                boolean carryOn = true;
+
                 while(carryOn) {
                     String message = getAnimal();
                     out.writeUTF(message);
