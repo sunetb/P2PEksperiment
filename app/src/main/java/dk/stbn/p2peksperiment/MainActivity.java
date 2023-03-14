@@ -22,7 +22,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -126,11 +125,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     class RemoteClient extends Thread {
         private final Socket client;
-        private int id;
+        private int number;
 
-        public RemoteClient (Socket clientSocket, int id) {
+        public RemoteClient (Socket clientSocket, int number) {
             this.client = clientSocket;
-            this.id = id;
+            this.number = number;
         }
         public void run() {
 
@@ -141,20 +140,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //Run conversation
                 while (carryOn) {
                     String str = (String) instream.readUTF();
-                    sUpdate("Client " + id + " says: " + str);
+                    sUpdate("Client " + number + " says: " + str);
                     String answer = getFood();
-                    sUpdate("Reply to client " + id + ": " + answer);
+                    sUpdate("Reply to client " + number + ": " + answer);
                     outstream.writeUTF(answer);
                     outstream.flush();
                     waitABit();
                 }
                 //Closing everything down
                 client.close();
-                sUpdate("SERVER: Remote client " + id + " socket closed");
+                sUpdate("SERVER: Remote client " + number + " socket closed");
                 instream.close();
-                sUpdate("SERVER: Remote client " + id + " inputstream closed");
+                sUpdate("SERVER: Remote client " + number + " inputstream closed");
                 outstream.close();
-                sUpdate("SERVER: Remote client  " + id + "outputstream closed");
+                sUpdate("SERVER: Remote client  " + number + "outputstream closed");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
