@@ -1,7 +1,6 @@
 package dk.stbn.p2peksperiment;
 
 
-
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
@@ -23,6 +22,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -45,8 +45,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // Some state
     private boolean ip_submitted = false;
-    private boolean carryOn = true;
+    private boolean carryOn = true; //Now only used for client part
     boolean clientStarted = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //Getting the IP address of the device
         THIS_IP_ADDRESS = getLocalIpAddress();
-        sUpdate("This IP is "+ THIS_IP_ADDRESS);
+        sUpdate("This IP is " + THIS_IP_ADDRESS);
 
         //Starting the server thread
         serverThread.start();
@@ -80,18 +81,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
 
-        if(view == startClient) {
+        if (view == startClient) {
             if (!clientStarted) {
                 clientStarted = true;
                 clientThread.start();
                 clientinfo += "- - - CLIENT STARTED - - - \n";
                 startClient.setText("Stop");
-            }
-            else {
+            } else {
                 carryOn = false; //NOT a good solution
             }
-        }
-        else if(view == submitIP) {
+        } else if (view == submitIP) {
             if (!ip_submitted) {
                 ip_submitted = true;
                 REMOTE_IP_ADDRESS = ipInputField.getText().toString();
@@ -105,48 +104,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     class MyServerThread implements Runnable {
         @Override
         public void run() {
-            //Always be ready for next client
-            while (true) {
+            try {
+                ServerSocket serverSocket = new ServerSocket(4444);
 
-                try {
-                    ServerSocket serverSocket = new ServerSocket(4444);
+                //Always be ready for next client
+                while (true) {
                     sUpdate("SERVER: start listening..");
-                    Socket klientSocket = serverSocket.accept();
+                    Socket clientSocket = serverSocket.accept();
                     sUpdate("SERVER connection accepted");
+                    new RemoteClient(clientSocket).start();
 
-                    DataInputStream instream = new DataInputStream(klientSocket.getInputStream());
-                    DataOutputStream outstream = new DataOutputStream(klientSocket.getOutputStream());
+                }//while listening for clients
 
-                    //Start conversation
-                    while(carryOn) {
-                        String str = (String) instream.readUTF();
-                        sUpdate("Client says: " + str);
-                        String answer = getFood();
-                        sUpdate("I said     " + answer);
-                        outstream.writeUTF(answer);
-                        outstream.flush();
-                        waitABit();
-                    }
-                    //Closing everything down
-                    serverSocket.close();
-                    sUpdate("SERVER: Server socket closed");
-                    klientSocket.close();
-                    sUpdate("SERVER: Client socket closed");
-                    instream.close();
-                    sUpdate("SERVER: inputstream closed");
-                    outstream.close();
-                    sUpdate("SERVER: outputstream closed");
-                } catch (IOException e) {
-                    sUpdate("oops!!");
-                    throw new RuntimeException(e);
-                }
-            }//while
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }//run
     }//runnable
 
+    class RemoteClient extends Thread {
+        private final Socket client;
+
+        public RemoteClient (Socket clientSocket) {
+            this.client = clientSocket;
+        }
+        public void run() {
+
+            try {
+                DataInputStream instream = new DataInputStream(client.getInputStream());
+                DataOutputStream outstream = new DataOutputStream(client.getOutputStream());
+
+                //Run conversation
+                while (carryOn) {
+                    String str = (String) instream.readUTF();
+                    sUpdate("Client says: " + str);
+                    String answer = getFood();
+                    sUpdate("I said     " + answer);
+                    outstream.writeUTF(answer);
+                    outstream.flush();
+                    waitABit();
+                }
+                //Closing everything down
+                client.close();
+                sUpdate("SERVER: Remote client socket closed");
+                instream.close();
+                sUpdate("SERVER: Remote client inputstream closed");
+                outstream.close();
+                sUpdate("SERVER: Remote client outputstream closed");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
     // !!! Returns 0.0.0.0 on emulator
     //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
-    private String getLocalIpAddress()  {
+    private String getLocalIpAddress() {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         assert wifiManager != null;
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
@@ -159,6 +172,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         return address;
     }
+
     class MyClientThread implements Runnable {
         @Override
         public void run() {
@@ -171,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
 
-                while(carryOn) {
+                while (carryOn) {
                     String message = getAnimal();
                     out.writeUTF(message);
                     out.flush();
@@ -196,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     } //class MyClientThread
 
     //Wait by setting the thread to sleep for 1,5 seconds
-    private void waitABit(){
+    private void waitABit() {
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) {
@@ -208,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //The below two methods are for updating UI-elements on the main thread
 
     //Server update TexView
-    private void sUpdate(String message){
+    private void sUpdate(String message) {
         //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
@@ -221,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     //Client update TextView
-    private void cUpdate(String message){
+    private void cUpdate(String message) {
         System.out.println(message);
 
         //Run this code on UI-thread
@@ -241,11 +255,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int r = new Random().nextInt(max);
         return animals[r];
     }
+
     public String getFood() {
         int max = food.length;
         int r = new Random().nextInt(max);
         return food[r];
     }
+
     String[] animals = { //from https://www.enchantedlearning.com/
             "aardvark",
             "abalone",
