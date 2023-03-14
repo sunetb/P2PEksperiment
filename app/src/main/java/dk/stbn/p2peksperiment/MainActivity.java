@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean carryOn = true; //Now only used for client part
     boolean clientStarted = false;
 
+    int clientNumber = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,7 +113,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     sUpdate("SERVER: start listening..");
                     Socket clientSocket = serverSocket.accept();
                     sUpdate("SERVER connection accepted");
-                    new RemoteClient(clientSocket).start();
+                    clientNumber++;
+                    new RemoteClient(clientSocket, clientNumber).start();
 
                 }//while listening for clients
 
@@ -124,9 +126,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     class RemoteClient extends Thread {
         private final Socket client;
+        private int id;
 
-        public RemoteClient (Socket clientSocket) {
+        public RemoteClient (Socket clientSocket, int id) {
             this.client = clientSocket;
+            this.id = id;
         }
         public void run() {
 
@@ -137,20 +141,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //Run conversation
                 while (carryOn) {
                     String str = (String) instream.readUTF();
-                    sUpdate("Client says: " + str);
+                    sUpdate("Client " + id + " says: " + str);
                     String answer = getFood();
-                    sUpdate("I said     " + answer);
+                    sUpdate("Reply to client " + id + ": " + answer);
                     outstream.writeUTF(answer);
                     outstream.flush();
                     waitABit();
                 }
                 //Closing everything down
                 client.close();
-                sUpdate("SERVER: Remote client socket closed");
+                sUpdate("SERVER: Remote client " + id + " socket closed");
                 instream.close();
-                sUpdate("SERVER: Remote client inputstream closed");
+                sUpdate("SERVER: Remote client " + id + " inputstream closed");
                 outstream.close();
-                sUpdate("SERVER: Remote client outputstream closed");
+                sUpdate("SERVER: Remote client  " + id + "outputstream closed");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
