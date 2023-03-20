@@ -212,11 +212,11 @@ private String getLocalIpAddress() throws UnknownHostException {
                 boolean carryOn = true;
                 while(carryOn) {
 
-                    //update("Type message (Enter sends the message)");
+                    update("Type message (Enter sends the message)");
                   wait();
                    String besked = theMessage;
-                    //out.writeUTF(besked);
-                    //update("CLIENT: wrote to outputstream");
+                    out.writeUTF(besked);
+                    update("CLIENT: wrote to outputstream");
 
                     out.flush();
                     //update("CLIENT: flushed");
