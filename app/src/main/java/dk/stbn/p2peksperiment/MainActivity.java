@@ -22,6 +22,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -48,6 +51,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean clientStarted = false;
 
     int clientNumber = 0;
+
+    //Structure/topology
+
+    String neighborL, neighborR;
+    String id;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,6 +81,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         THIS_IP_ADDRESS = getLocalIpAddress();
         sUpdate("This IP is " + THIS_IP_ADDRESS);
 
+        //Generate hash (not thread-safe). Reworked copy from https://www.baeldung.com/sha-256-hashing-java
+        MessageDigest digest = null;
+        byte[] encodedhash = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            encodedhash = digest.digest(
+                    THIS_IP_ADDRESS.getBytes(StandardCharsets.UTF_8));
+        }
+        if (encodedhash != null) {
+            id = bytesToHex(encodedhash);
+        }
+        sUpdate("This ID is " + id);
         //Starting the server thread
         serverThread.start();
         serverinfo += "- - - SERVER STARTED - - -\n";
@@ -249,6 +274,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 clientInfoTv.setText(clientinfo);
             }
         });
+    }
+
+    //Stolen from https://www.baeldung.com/sha-256-hashing-java
+    private static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if(hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     //Below is not really interesting. Just for testing with animals and food
