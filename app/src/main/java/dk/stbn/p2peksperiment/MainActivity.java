@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -81,27 +82,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         THIS_IP_ADDRESS = getLocalIpAddress();
         sUpdate("This IP is " + THIS_IP_ADDRESS);
 
-        //Generate hash (not thread-safe). Reworked copy from https://www.baeldung.com/sha-256-hashing-java
-        MessageDigest digest = null;
-        byte[] encodedhash = null;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            encodedhash = digest.digest(
-                    THIS_IP_ADDRESS.getBytes(StandardCharsets.UTF_8));
-        }
-        if (encodedhash != null) {
-            id = bytesToHex(encodedhash);
-        }
+        //Give this node an ID
+        id = stringToHash(THIS_IP_ADDRESS);
         sUpdate("This ID is " + id);
+
         //Starting the server thread
         serverThread.start();
         serverinfo += "- - - SERVER STARTED - - -\n";
-
     }
+
+
+
+
 
     @Override
     public void onClick(View view) {
@@ -185,21 +177,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     }
-    // !!! Returns 0.0.0.0 on emulator
-    //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
-    private String getLocalIpAddress() {
-        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-        assert wifiManager != null;
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int ipInt = wifiInfo.getIpAddress();
-        String address = null;
-        try {
-            address = InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        return address;
-    }
+
 
     class MyClientThread implements Runnable {
         @Override
@@ -276,18 +254,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    //Stolen from https://www.baeldung.com/sha-256-hashing-java
-    private static String bytesToHex(byte[] hash) {
-        StringBuilder hexString = new StringBuilder(2 * hash.length);
-        for (int i = 0; i < hash.length; i++) {
-            String hex = Integer.toHexString(0xff & hash[i]);
+    /////////Utility methods
+
+    // !!! Returns 0.0.0.0 on emulator
+    //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
+    private String getLocalIpAddress() {
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        assert wifiManager != null;
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        int ipInt = wifiInfo.getIpAddress();
+        String address = null;
+        try {
+            address = InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        return address;
+    }
+
+    //Generate hash (in HEX format) from a string (not thread-safe). Partly modified from https://www.baeldung.com/sha-256-hashing-java
+    private String stringToHash(String ipAddress) {
+
+        MessageDigest digest = null;
+        byte[] encodedhash = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        byte[] ipAsBytes;
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) { //Want to avoid this? Set minSDK to 21
+            ipAsBytes = ipAddress.getBytes(StandardCharsets.UTF_8);
+        }
+        else{
+            ipAsBytes = ipAddress.getBytes(Charset.forName("UTF-8"));
+        }
+        encodedhash = digest.digest(ipAsBytes);
+
+        StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
+        for (int i = 0; i < encodedhash.length; i++) {
+            String hex = Integer.toHexString(0xff & encodedhash[i]);
             if(hex.length() == 1) {
                 hexString.append('0');
             }
             hexString.append(hex);
         }
         return hexString.toString();
+
     }
+
 
     //Below is not really interesting. Just for testing with animals and food
 
