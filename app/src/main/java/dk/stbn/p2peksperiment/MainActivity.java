@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -65,7 +66,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         submitIP.setOnClickListener(this);
 
         //Setting some UI state
-        ipInputField.setHint("Submit IP-address");
+        String lastIP = getSavedIP();
+        if (lastIP.equals("no"))
+            ipInputField.setHint("Submit IP-address");
+        else
+            ipInputField.setText(lastIP);
+
         startClient.setEnabled(false); //deactivates the button
 
         //Getting the IP address of the device
@@ -94,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (!ip_submitted) {
                 ip_submitted = true;
                 REMOTE_IP_ADDRESS = ipInputField.getText().toString();
+                saveIP(REMOTE_IP_ADDRESS);
                 startClient.setEnabled(true);
                 submitIP.setEnabled(false);
             }
@@ -251,6 +258,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
+    //Convenience: save and restore latest IP
+    private void saveIP(String ip){
+        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("lastIP",ip).apply();
+    }
+    private String getSavedIP(){
+        return PreferenceManager.getDefaultSharedPreferences(this).getString("lastIP", "no");
+    }
     //Below is not really interesting. Just for testing with animals and food
 
     public String getAnimal() {
