@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //Starting the server thread
         serverThread.start();
         serverinfo += "- - - SERVER STARTED - - -\n";
+        testHashMethod();
     }
 
 
@@ -275,15 +276,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //Generate hash (in HEX format) from a string (not thread-safe). Partly modified from https://www.baeldung.com/sha-256-hashing-java
     private String stringToHash(String ipAddress) {
 
-        MessageDigest digest = null;
-        byte[] encodedhash = null;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-
         byte[] ipAsBytes;
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) { //Want to avoid this? Set minSDK to 21
@@ -292,8 +284,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         else{
             ipAsBytes = ipAddress.getBytes(Charset.forName("UTF-8"));
         }
-        encodedhash = digest.digest(ipAsBytes);
 
+        MessageDigest digest = null;
+
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        byte[] encodedhash = digest.digest(ipAsBytes);
+
+        //Convert to HEX string
         StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
         for (int i = 0; i < encodedhash.length; i++) {
             String hex = Integer.toHexString(0xff & encodedhash[i]);
@@ -303,9 +306,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             hexString.append(hex);
         }
         return hexString.toString();
-
     }
 
+void testHashMethod(){
+        String a = stringToHash("a");
+        String b = stringToHash("b");
+
+        if (a.compareTo(b) == 0)
+            System.out.println("They are equal");
+
+        else if (a.compareTo(b) > 0)
+            System.out.println("a is greater than b");
+
+        else
+            System.out.println("a is less than b");
+}
 
     //Below is not really interesting. Just for testing with animals and food
 
