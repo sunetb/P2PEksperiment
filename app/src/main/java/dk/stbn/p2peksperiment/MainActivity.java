@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 clientinfo += "- - - CLIENT STARTED - - - \n";
                 startClient.setText("Stop");
             } else {
-                carryOn = false; //NOT a good solution
+                carryOn = false; //Not tread safe, but will do for now
             }
         } else if (view == submitIP) {
             if (!ip_submitted) {
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //Always be ready for next client
                 while (true) {
                     sUpdate("SERVER: start listening..");
-                    Socket clientSocket = serverSocket.accept();
+                    Socket clientSocket = serverSocket.accept();//Accept is called when a client connects
                     sUpdate("SERVER connection accepted");
                     clientNumber++;
                     new RemoteClient(clientSocket, clientNumber).start();
@@ -128,10 +128,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 throw new RuntimeException(e);
             }
         }//run
-    }//runnable
+    }//MyServerThread
 
-    class RemoteClient extends Thread {
-        private final Socket client;
+    //Enabling several clients to one server, bu running the communication with each client in its own thread.
+    //Maybe a better name would be "Connection-handler" or similar
+    class RemoteClient extends Thread { //This belongs to the server
+        private final Socket client; //The client socket of the server
         private int number;
 
         public RemoteClient (Socket clientSocket, int number) {
@@ -144,12 +146,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 DataInputStream instream = new DataInputStream(client.getInputStream());
                 DataOutputStream outstream = new DataOutputStream(client.getOutputStream());
 
-                //Run conversation
+                //Run conversation for server-side
                 while (carryOn) {
+                    //Recieving message from remote client
                     String str = (String) instream.readUTF();
                     sUpdate("Client " + number + " says: " + str);
+                    //Generating random answer
                     String answer = getFood();
                     sUpdate("Reply to client " + number + ": " + answer);
+                    //Write message (answer) to client
                     outstream.writeUTF(answer);
                     outstream.flush();
                     waitABit();
@@ -196,12 +201,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
 
                 while (carryOn) {
-                    String message = getAnimal();
+                    String message = getAnimal(); //Select random message
+                    //Write message to outstream
                     out.writeUTF(message);
                     out.flush();
                     cUpdate("I said:      " + message);
+                    //Read message from server
                     String messageFromServer = instream.readUTF();
                     cUpdate("Server says: " + messageFromServer);
+                    //Simple wait
                     waitABit();
                 }
                 instream.close();
