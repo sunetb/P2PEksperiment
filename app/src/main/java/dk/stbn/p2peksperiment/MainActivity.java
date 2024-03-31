@@ -108,6 +108,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }//onclick
 
+    //END UI-stuff
+
+
+    //-------------------The server
     class MyServerThread implements Runnable {
         @Override
         public void run() {
@@ -130,11 +134,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }//run
     }//MyServerThread
 
-    //Enabling several clients to one server, bu running the communication with each client in its own thread.
-    //Maybe a better name would be "Connection-handler" or similar
+    //Enabling several clients to one server, by running the communication with each client in its own thread.
+    //Maybe a better name would be "Connection-handler", "(remote) client socket" or similar
     class RemoteClient extends Thread { //This belongs to the server
         private final Socket client; //The client socket of the server
-        private int number;
+        private int number; //This client's ID
 
         public RemoteClient (Socket clientSocket, int number) {
             this.client = clientSocket;
@@ -170,24 +174,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 throw new RuntimeException(e);
             }
         }
-
-    }
-    // !!! Returns 0.0.0.0 on emulator
-    //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
-    private String getLocalIpAddress() {
-        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-        assert wifiManager != null;
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int ipInt = wifiInfo.getIpAddress();
-        String address = null;
-        try {
-            address = InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        return address;
     }
 
+
+    //-------------------The client
     class MyClientThread implements Runnable {
         @Override
         public void run() {
@@ -227,6 +217,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }//run()
     } //class MyClientThread
 
+
+
+    // !!! Returns 0.0.0.0 on emulator
+    //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
+    private String getLocalIpAddress() {
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        assert wifiManager != null;
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        int ipInt = wifiInfo.getIpAddress();
+        String address = null;
+        try {
+            address = InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        return address;
+    }
+
     //Wait by setting the thread to sleep for 1,5 seconds
     private void waitABit() {
         try {
@@ -242,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //Server update TexView
     private void sUpdate(String message) {
         //Run this code on UI-thread
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 serverinfo = message + "\n" + serverinfo;
@@ -257,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         System.out.println(message);
 
         //Run this code on UI-thread
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 clientinfo = message + "\n" + clientinfo;
@@ -273,6 +281,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String getSavedIP(){
         return PreferenceManager.getDefaultSharedPreferences(this).getString("lastIP", "no");
     }
+
+
     //Below is not really interesting. Just for testing with animals and food
 
     public String getAnimal() {
@@ -1370,7 +1380,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             "liver",
             "loaf",
             "lobster",
-            "lollipop",
+            "lolluipop",
             "loquat",
             "lox",
             "lunch",
