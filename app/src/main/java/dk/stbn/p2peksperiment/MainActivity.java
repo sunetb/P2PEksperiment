@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }//MyServerThread
 
     //Enabling several clients to one server, by running the communication with each client in its own thread.
-    //Maybe a better name would be "Connection-handler", "(remote) client socket" or similar
+    //Maybe a better name then RemoteClient would be "ClientConnection", "ClientSocket" or similar
     class RemoteClient extends Thread { //This belongs to the server
         private final Socket client; //The client socket of the server
         private int number; //This client's ID
@@ -150,18 +150,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 DataInputStream instream = new DataInputStream(client.getInputStream());
                 DataOutputStream outstream = new DataOutputStream(client.getOutputStream());
 
-                //Run conversation for server-side
+                //Run conversation server-side
                 while (carryOn) {
                     //Recieving message from remote client
-                    String str = (String) instream.readUTF();
-                    sUpdate("Client " + number + " says: " + str);
-                    //Generating random answer
-                    String answer = getFood();
-                    sUpdate("Reply to client " + number + ": " + answer);
+                    String request = (String) instream.readUTF();
+                    sUpdate("Client " + number + " says: " + request);
+                    //Generating response
+                    String response = generateResponse(request);
+                    sUpdate("Reply to client " + number + ": " + response);
                     //Write message (answer) to client
-                    outstream.writeUTF(answer);
+                    outstream.writeUTF(response);
                     outstream.flush();
-                    waitABit();
+                    waitABit();//HINT You might want to remove this at some point
                 }
                 //Closing everything down
                 client.close();
@@ -173,6 +173,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        private String generateResponse(String req){
+            //HINT: This is where you could react to "signals" or "requests" from the client
+            // E.g. some if(req.equals(...))-statements
+            String resp =  getFood(); //HINT: This is where you could choose an appropriate response
+            return resp;
         }
     }
 
