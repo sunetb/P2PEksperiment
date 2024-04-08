@@ -23,6 +23,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -49,6 +52,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean clientStarted = false;
 
     int clientNumber = 0;
+
+    CommunicationHandler ch;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +87,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //Starting the server thread
         serverThread.start();
         serverinfo += "- - - SERVER STARTED - - -\n";
+
+        ch = new CommunicationHandler();
 
     }
 
@@ -154,7 +162,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 while (carryOn) {
                     //Recieving message from remote client
                     String request = (String) instream.readUTF();
-                    sUpdate("Client " + number + " says: " + request);
+
+                    String[] req = request.split("\n");
+
+                    String remoteID ="";
+                    if (req[0].equalsIgnoreCase("getID")){
+                        remoteID = ch.getId(req[1]);
+                    }
+
+                    sUpdate("Client " + number + " says: " + remoteID);
                     //Generating response
                     String response = generateResponse(request);
                     sUpdate("Reply to client " + number + ": " + response);
@@ -198,9 +214,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
 
                 while (carryOn) {
-                    String message = getAnimal(); //Select random message
+                    String message = "getid"; //getAnimal(); //Select random message
                     //Write message to outstream
+
                     out.writeUTF(message);
+                    String message2 = ch.nodeID;
+                    out.writeUTF(message2);
                     out.flush();
                     cUpdate("I said:      " + message);
                     //Read message from server
@@ -250,7 +269,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             throw new RuntimeException(e);
         }
     }
-
 
     //The below two methods are for updating UI-elements on the main thread
 
