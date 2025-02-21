@@ -4,13 +4,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class CommunicationHandler implements RidesharingInterface{
+public class CommunicationHandler implements CommunicationInterface {
 
     String nodeID;
     @Override
     public boolean assignID(String ip) {
         try {
-            nodeID = hashIt(ip);
+            this.nodeID = hashIt(ip);
         }
         catch (Exception e){
             return false;
@@ -20,8 +20,7 @@ public class CommunicationHandler implements RidesharingInterface{
 
     @Override
     public String getId(String nodeId) {
-        //save or something with the caller ID... at a later point
-        return nodeID;
+        return this.nodeID;
     }
 
 

@@ -261,7 +261,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return address;
     }
 
-    //Wait by setting the thread to sleep for 1,5 seconds
+    //Wait by setting the thread to sleep for 1,5 seconds. Used in DEMO-mode
     private void waitABit() {
         try {
             Thread.sleep(1500);
