@@ -8,14 +8,8 @@ public class CommunicationHandler implements CommunicationInterface {
 
     String nodeID;
     @Override
-    public boolean assignID(String ip) {
-        try {
-            this.nodeID = hashIt(ip);
-        }
-        catch (Exception e){
-            return false;
-        }
-        return true;
+    public void assignID(String ip) {
+        this.nodeID = hashIt(ip);
     }
 
     @Override
@@ -26,7 +20,7 @@ public class CommunicationHandler implements CommunicationInterface {
 
 
 
-    //I got this from the internet
+    //From the internet
     static String hashIt (String data) {
 
         MessageDigest digest = null;
@@ -36,9 +30,8 @@ public class CommunicationHandler implements CommunicationInterface {
             throw new RuntimeException(e);
         }
         byte[] stringAsBytes = new byte[0];
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
             stringAsBytes = data.getBytes(StandardCharsets.UTF_8);
-        }
+
         byte[] encodedhash = digest.digest(stringAsBytes);
 
         StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
