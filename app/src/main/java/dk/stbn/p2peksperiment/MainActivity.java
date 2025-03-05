@@ -98,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startClient.setText("Stop");
             } else {
                 clientThread.endConversation();
+                startClient.setEnabled(false);
             }
         } else if (view == submitIP) {
             if (!ip_submitted) {
@@ -282,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //Thread-safe updating of UI elements
 
-   private void updateUI(String message, boolean fromServer) {
+    private void updateUI(String message, boolean fromServer) {
         System.out.println(message);
 
         //Run this code on UI-thread
@@ -294,11 +295,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     serverinfo = message + "\n" + serverinfo;
                     serverInfoTv.setText(serverinfo);
 
-                }
-                else
+                } else {
                     clientinfo = message + "\n" + clientinfo;
                     clientInfoTv.setText(clientinfo);
                 }
+            }
         });
     }
 
