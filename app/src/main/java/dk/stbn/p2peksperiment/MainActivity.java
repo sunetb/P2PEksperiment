@@ -97,9 +97,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 clientinfo += "- - - CLIENT STARTED - - - \n";
                 startClient.setText("Stop");
             } else {
-                serverThread.endConversation(); //Not tread safe, but will do for now
-
-
+                clientThread.endConversation();
             }
         } else if (view == submitIP) {
             if (!ip_submitted) {
@@ -229,10 +227,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     String message = getAnimal();
                     out.writeUTF(message);
                     out.flush();
-                    updateUI("I said:      " + message, false);
+                    updateUI("I said:______" + message, false);
                     //Read message from server
                     String messageFromServer = instream.readUTF();
-                    updateUI("Server says: " + messageFromServer, false);
+                    updateUI("Server says:_" + messageFromServer, false);
                     //Simple wait
                     waitABit();
                 }
@@ -318,13 +316,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public String getAnimal() {
         int max = animals.length;
         int r = new Random().nextInt(max);
-        return animals[r];
+        return "___Animal:__" + animals[r];
     }
 
     public String getFood() {
         int max = food.length;
         int r = new Random().nextInt(max);
-        return food[r];
+        return "Food item:__" + food[r];
     }
 
     String[] animals = { //from https://www.enchantedlearning.com/
