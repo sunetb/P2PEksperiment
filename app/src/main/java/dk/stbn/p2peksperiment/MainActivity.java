@@ -4,8 +4,6 @@ package dk.stbn.p2peksperiment;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.Button;
@@ -23,9 +21,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -43,12 +38,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final int PORT = 4444;
     private String THIS_IP_ADDRESS = "";
     private String REMOTE_IP_ADDRESS = "";
-    private Thread serverThread = new Thread(new MyServerThread());
-    private Thread clientThread = new Thread(new MyClientThread());
+    private MyServerThread serverThread = new MyServerThread();
+    private MyClientThread clientThread = new MyClientThread();
 
     // Some state
     private boolean ip_submitted = false;
-    private boolean carryOn = true; //Now only used for client part
+   // private boolean carryOn = true; //Now only used for client part
     boolean clientStarted = false;
 
     int clientNumber = 0;
@@ -82,10 +77,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //Getting the IP address of the device
         THIS_IP_ADDRESS = getLocalIpAddress();
-        sUpdate("This IP is " + THIS_IP_ADDRESS);
+        updateUI("This IP is " + THIS_IP_ADDRESS, true);
 
         //Starting the server thread
-        serverThread.start();
+        new Thread(serverThread).start();
         serverinfo += "- - - SERVER STARTED - - -\n";
 
         ch = new CommunicationHandler();
@@ -98,11 +93,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (view == startClient) {
             if (!clientStarted) {
                 clientStarted = true;
-                clientThread.start();
+                new Thread(clientThread).start();
                 clientinfo += "- - - CLIENT STARTED - - - \n";
                 startClient.setText("Stop");
             } else {
-                carryOn = false; //Not tread safe, but will do for now
+                serverThread.endConversation(); //Not tread safe, but will do for now
+
+
             }
         } else if (view == submitIP) {
             if (!ip_submitted) {
@@ -121,6 +118,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //-------------------The server
     class MyServerThread implements Runnable {
+        private boolean carryOn = true;
+
+        public void endConversation(){
+            carryOn = false;
+        }
+
         @Override
         public void run() {
             try {
@@ -128,9 +131,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 //Always be ready for next client
                 while (true) {
-                    sUpdate("SERVER: start listening..");
+                    updateUI("SERVER: start listening..", true);
                     Socket clientSocket = serverSocket.accept();//Accept is called when a client connects
-                    sUpdate("SERVER connection accepted");
+                    updateUI("SERVER connection accepted", true);
                     clientNumber++;
                     new RemoteClient(clientSocket, clientNumber).start();
 
@@ -148,6 +151,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private final Socket client; //The client socket of the server
         private int number; //This client's ID
 
+        private boolean carryOn = true;
+        public void endConversation(){
+            carryOn = false;
+        }
         public RemoteClient (Socket clientSocket, int number) {
             this.client = clientSocket;
             this.number = number;
@@ -162,36 +169,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 while (carryOn) {
                     //Recieving message from remote client
                     String request = (String) instream.readUTF();
-
-                    String[] req = request.split("\n");
-
-                    String remoteID ="";
-                    if (req[0].equalsIgnoreCase("getID")){
-                        remoteID = ch.getId(req[1]);
-                    }
-
-                    sUpdate("Client " + number + " says: " + remoteID);
+                    updateUI("Client " + number + " says: " + request, true);
                     //Generating response
                     String response = generateResponse(request);
-                    sUpdate("Reply to client " + number + ": " + response);
+                    updateUI("Reply to client " + number + ": " + response, true);
                     //Write message (answer) to client
                     outstream.writeUTF(response);
                     outstream.flush();
                     waitABit();//HINT You might want to remove this at some point
                 }
+
                 //Closing everything down
                 client.close();
-                sUpdate("SERVER: Remote client " + number + " socket closed");
+                updateUI("SERVER: Remote client " + number + " socket closed", true);
                 instream.close();
-                sUpdate("SERVER: Remote client " + number + " inputstream closed");
+                updateUI("SERVER: Remote client " + number + " inputstream closed", true);
                 outstream.close();
-                sUpdate("SERVER: Remote client  " + number + "outputstream closed");
+                updateUI("SERVER: Remote client  " + number + "outputstream closed", true);
+
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         }
 
         private String generateResponse(String req){
+            if (req.equals("____Bye bye!!____")){
+                carryOn = false;
+                return "See you";
+            }
             //HINT: This is where you could react to "signals" or "requests" from the client
             // E.g. some if(req.equals(...))-statements
             String resp =  getFood(); //HINT: This is where you could choose an appropriate response
@@ -202,38 +207,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //-------------------The client
     class MyClientThread implements Runnable {
+
+        private boolean carryOn = true;
+        public void endConversation(){
+            carryOn = false;
+        }
+
         @Override
         public void run() {
 
             try {
-                cUpdate("CLIENT: starting client socket ");
+                updateUI("CLIENT: starting client socket ", false);
                 Socket connectionToServer = new Socket(REMOTE_IP_ADDRESS, 4444);
-                cUpdate("CLIENT: client connected ");
+                updateUI("CLIENT: client connected ", false);
 
                 DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
                 DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
 
                 while (carryOn) {
-                    String message = "getid"; //getAnimal(); //Select random message
                     //Write message to outstream
-
+                    String message = getAnimal();
                     out.writeUTF(message);
-                    String message2 = ch.nodeID;
-                    out.writeUTF(message2);
                     out.flush();
-                    cUpdate("I said:      " + message);
+                    updateUI("I said:      " + message, false);
                     //Read message from server
                     String messageFromServer = instream.readUTF();
-                    cUpdate("Server says: " + messageFromServer);
+                    updateUI("Server says: " + messageFromServer, false);
                     //Simple wait
                     waitABit();
                 }
+                //Saying goodbye
+                out.writeUTF("____Bye bye!!____");
+                out.flush();
+                //Closing down
                 instream.close();
-                cUpdate("CLIENT: closed inputstream");
+                updateUI("CLIENT: closed inputstream", false);
                 out.close();
-                cUpdate("CLIENT: closed outputstream");
+                updateUI("CLIENT: closed outputstream", false);
                 connectionToServer.close();
-                cUpdate("CLIENT: closed socket");
+                updateUI("CLIENT: closed socket", false);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -270,36 +282,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    //The below two methods are for updating UI-elements on the main thread
+    //Thread-safe updating of UI elements
 
-    //Server update TexView
-    private void sUpdate(String message) {
-        //Run this code on UI-thread
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                serverinfo = message + "\n" + serverinfo;
-                serverInfoTv.setText(serverinfo);
-            }
-        });
-
-    }
-
-    //Client update TextView
-    private void cUpdate(String message) {
+   private void updateUI(String message, boolean fromServer) {
         System.out.println(message);
 
         //Run this code on UI-thread
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                clientinfo = message + "\n" + clientinfo;
-                clientInfoTv.setText(clientinfo);
-            }
+
+                if (fromServer) {
+                    serverinfo = message + "\n" + serverinfo;
+                    serverInfoTv.setText(serverinfo);
+
+                }
+                else
+                    clientinfo = message + "\n" + clientinfo;
+                    clientInfoTv.setText(clientinfo);
+                }
         });
     }
 
-    //Convenience: save and restore latest IP
+    //Convenience methods: save and restore latest IP
     private void saveIP(String ip){
         PreferenceManager.getDefaultSharedPreferences(this).edit().putString("lastIP",ip).apply();
     }
