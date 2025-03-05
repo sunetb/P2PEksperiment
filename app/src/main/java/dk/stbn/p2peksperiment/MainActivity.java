@@ -12,43 +12,39 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, MessageUpdate {
 
+    /*
+    * Note:
+    * "Responder" was "server"
+    * "Requester" was "client"
+    * */
+
     // UI-elements
-    private Button startClient, submitIP;
-    private TextView serverInfoTv, clientInfoTv;
+    private Button startRequester, submitIP;
+    private TextView responderInfoTv, requesterInfoTv;
     private EditText ipInputField;
 
     // Logging/status messages
-    private String serverinfo = "SERVER LOG:";
-    private String clientinfo = "CLIENT LOG: ";
+    private String responderInfo = "Responder LOG:";
+    private String requesterInfo = "Requester LOG: ";
 
     // Global data
     private final int PORT = 4444;
     private String THIS_IP_ADDRESS = "";
     private String REMOTE_IP_ADDRESS = "";
     private Responder responderThread = new Responder(this);
-    private Requester requesterThread;// = new Requester(this);
+    private Requester requesterThread;
 
     // Some state
     private boolean ip_submitted = false;
-   // private boolean carryOn = true; //Now only used for client part
-    boolean clientStarted = false;
 
-    int clientNumber = 0;
-
-    CommunicationHandler ch;
+    boolean requesterStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +52,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         //UI boilerplate
-        startClient = findViewById(R.id.button);
-        serverInfoTv = findViewById(R.id.serveroutput);
-        clientInfoTv = findViewById(R.id.clientoutput);
+        startRequester = findViewById(R.id.button);
+        responderInfoTv = findViewById(R.id.serveroutput);
+        requesterInfoTv = findViewById(R.id.clientoutput);
         submitIP = findViewById(R.id.sendclient);
         ipInputField = findViewById(R.id.clientmessagefield);
 
         //Setting click-listeners on buttons
-        startClient.setOnClickListener(this);
+        startRequester.setOnClickListener(this);
         submitIP.setOnClickListener(this);
 
         //Setting some UI state
@@ -73,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         else
             ipInputField.setText(lastIP);
 
-        startClient.setEnabled(false); //deactivates the button
+        startRequester.setEnabled(false); //deactivates the button
 
         //Getting the IP address of the device
         THIS_IP_ADDRESS = getLocalIpAddress();
@@ -81,49 +77,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //Starting the server thread
         new Thread(responderThread).start();
-        serverinfo += "- - - SERVER STARTED - - -\n";
+        responderInfo += "- - - RESPONDER STARTED - - -\n";
 
-        ch = new CommunicationHandler();
+        //ch = new CommunicationHandler();
 
     }
 
     @Override
     public void onClick(View view) {
 
-        if (view == startClient) {
-            if (!clientStarted) {
-                clientStarted = true;
-                requesterThread = new Requester(THIS_IP_ADDRESS, this);
+        if (view == startRequester) {
+            if (!requesterStarted) {
+                requesterStarted = true;
+                requesterThread = new Requester(REMOTE_IP_ADDRESS, this);
                 new Thread(requesterThread).start();
-                clientinfo += "- - - CLIENT STARTED - - - \n";
-                startClient.setText("Stop");
+                requesterInfo += "- - - REQUESTER STARTED - - - \n";
+                startRequester.setText("Stop");
             } else {
                 requesterThread.endConversation();
-                startClient.setEnabled(false);
+                startRequester.setEnabled(false);
             }
         } else if (view == submitIP) {
             if (!ip_submitted) {
                 ip_submitted = true;
                 REMOTE_IP_ADDRESS = ipInputField.getText().toString();
                 saveIP(REMOTE_IP_ADDRESS);
-                startClient.setEnabled(true);
+                startRequester.setEnabled(true);
                 submitIP.setEnabled(false);
             }
         }
 
-    }//onclick
-
-    //END UI-stuff
-
-
-    //-------------------The server
+    }//END onclick
 
 
 
-    //-------------------The client
-
-
-    // !!! Returns 0.0.0.0 on emulator
+    // !!! Often returns 0.0.0.0 on emulator
     //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
     private String getLocalIpAddress() {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
@@ -142,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     //Thread-safe updating of UI elements
-
+    @Override
     public void updateUI(String message, boolean fromResponder) {
         System.out.println(message);
 
@@ -152,12 +140,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
 
                 if (fromResponder) {
-                    serverinfo = message + "\n" + serverinfo;
-                    serverInfoTv.setText(serverinfo);
+                    responderInfo = message + "\n" + responderInfo;
+                    responderInfoTv.setText(responderInfo);
 
                 } else {
-                    clientinfo = message + "\n" + clientinfo;
-                    clientInfoTv.setText(clientinfo);
+                    requesterInfo = message + "\n" + requesterInfo;
+                    requesterInfoTv.setText(requesterInfo);
                 }
             }
         });

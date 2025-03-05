@@ -8,7 +8,7 @@ import java.net.Socket;
 
 class Responder implements Runnable {
 
-    private MessageUpdate phoneHome;
+    private MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
     int clientNumber = 0;
 
 
@@ -41,7 +41,7 @@ class Responder implements Runnable {
 //Maybe a better name then RemoteClient would be "ClientConnection", "ClientSocket" or similar
 class RemoteClient extends Thread { //This belongs to the server
 
-    MessageUpdate phoneHome;
+    MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
     private final Socket client; //The client socket of the server
     private int number; //This client's ID
 

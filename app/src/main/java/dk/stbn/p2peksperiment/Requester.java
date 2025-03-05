@@ -7,7 +7,7 @@ import java.net.Socket;
 
 public class Requester implements Runnable{
 
-    MessageUpdate phoneHome;
+    MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
 
     String remoteIP;
     private boolean carryOn = true;
