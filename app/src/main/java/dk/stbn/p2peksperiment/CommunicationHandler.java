@@ -40,14 +40,20 @@ public class CommunicationHandler implements CommunicationInterface {
 
             return "See you";
         }
-        //HINT: This is where you could react to "signals" or "requests" from the client
-        // E.g. some if(req.equals(...))-statements
-        String resp =  Util.getFood(); //HINT: This is where you could choose an appropriate response
-        return resp;
+        if (req.equals("ID")){
+            return getId();
+        }
+       //Default
+        return Util.getFood();
     }
-    public void setState (String thisIP, String remoteIP){
 
+    @Override
+    public String generateRequest(String response){
+
+        return Util.getAnimal();
     }
+
+
 
 
 

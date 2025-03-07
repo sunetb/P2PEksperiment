@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // UI-elements
     private Button startRequesterButton, submitIPButton;
-    private TextView responderInfoTv, requesterInfoTv;
+    private TextView responderInfoTv, requesterInfoTv, responderTitleTv;
     private EditText ipInputField;
 
     // Global data
@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startRequesterButton = findViewById(R.id.button);
         responderInfoTv = findViewById(R.id.responderoutput);
         requesterInfoTv = findViewById(R.id.requesteroutput);
+        responderTitleTv = findViewById(R.id.respondertitle);
         submitIPButton = findViewById(R.id.sendrequester);
         ipInputField = findViewById(R.id.requestermessagefield);
 
@@ -60,35 +61,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startRequesterButton.setEnabled(false); //deactivates the button
 
         //Getting the IP address of the device
+        //1 Show it
         String thisIpAddress = Util.getLocalIpAddress(this);
-        updateUI("This IP is " + thisIpAddress, true);
+        responderTitleTv.append("  "+thisIpAddress);
+        //2: Us it for Node ID
+        CommunicationHandler.getInstance().assignID(thisIpAddress);
+        updateUI("- - - NODE ID:  \n" + CommunicationHandler.getInstance().getId() + "\n", true);
 
         //Starting the Responder thread
         responderThread = new Responder(this);
         new Thread(responderThread).start();
-        updateUI("- - - RESPONDER STARTED - - -\n", true);
+        updateUI("- - - RESPONDER STARTED AUTOMATICALLY - - -\n", true);
+
     }
 
     @Override
     public void onClick(View view) {
 
         if (view == startRequesterButton) {
-            if (!requesterStarted) {
+            if (!requesterStarted) { //Start scenario
                 requesterStarted = true;
                 String remoteIP = ipInputField.getText().toString();
                 requesterThread = new Requester(remoteIP, this);
                 new Thread(requesterThread).start();
-                updateUI("- - - REQUESTER STARTED AUTOMATICALLY - - - \n", false);
+                updateUI("- - - REQUESTER STARTED - - - \n", false);
                 startRequesterButton.setText("Stop");
-            } else {
+            } else { //Stop scenario
                 requesterThread.endConversation();
+                responderThread.endConversation();
                 startRequesterButton.setEnabled(false);
+                submitIPButton.setEnabled(true);
+                requesterStarted = false;
+                ip_submitted = false;
+                updateUI("- - - REQUESTER ENDED - - - \n", false);
+
             }
         } else if (view == submitIPButton) {
             if (!ip_submitted) {
                 ip_submitted = true;
                 saveIP(ipInputField.getText().toString());
                 startRequesterButton.setEnabled(true);
+                startRequesterButton.setText("restart");
                 submitIPButton.setEnabled(false);
             }
         }

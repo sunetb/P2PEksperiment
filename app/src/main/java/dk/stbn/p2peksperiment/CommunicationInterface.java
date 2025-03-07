@@ -1,7 +1,7 @@
 package dk.stbn.p2peksperiment;
 
 public interface CommunicationInterface {
-    //This is still almost a stub
+    //VERY primitive, almost a stub
 
     void assignID(String ip); //Called by the node itself
 
@@ -9,5 +9,7 @@ public interface CommunicationInterface {
     String getId();
 
     String generateResponse (String request);
+
+    String generateRequest (String response);
 
 }

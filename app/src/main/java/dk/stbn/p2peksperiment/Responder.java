@@ -11,7 +11,6 @@ class Responder implements Runnable {
     private MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
     int requesterNumber = 0;
 
-
     public Responder(MessageUpdate main) {
         this.phoneHome = main;
     }
@@ -25,7 +24,7 @@ class Responder implements Runnable {
             while (true) {
                 phoneHome.updateUI("RESPONDER: start listening..", true);
                 Socket socket = serverSocket.accept();//Accept is called when a requester connects
-                phoneHome.updateUI("RESPONDER connection accepted", true);
+                phoneHome.updateUI("RESPONDER: connection accepted", true);
                 requesterNumber++;
                 new RemoteRequester(socket, requesterNumber).start();
 
@@ -35,6 +34,10 @@ class Responder implements Runnable {
             throw new RuntimeException(e);
         }
     }//run
+
+    public void endConversation() {
+
+    }
 
 
 //Inner class representing a remote node to contact tis node.

@@ -11,6 +11,7 @@
 
         <TextView
         android:text="Responder"
+        android:id="@+id/respondertitle"
         android:background="#eab676"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
@@ -56,7 +57,7 @@
             android:layout_width="0dp"
             android:layout_weight="25"
             android:layout_height="wrap_content"
-            android:text="Submit" />
+            android:text="->" />
 
     </LinearLayout>
     <LinearLayout
