@@ -10,12 +10,12 @@
         tools:context=".MainActivity">
 
         <TextView
-        android:text="Server"
+        android:text="Responder"
         android:background="#eab676"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
         <ScrollView
-            android:id="@+id/scrollViewServer"
+            android:id="@+id/scrollViewResponder"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="40">
@@ -26,14 +26,14 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/serveroutput"
+                    android:id="@+id/responderoutput"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hello World!" />
+                    android:text="" />
             </LinearLayout>
         </ScrollView>
     <TextView
-        android:text="Client"
+        android:text="Requester"
         android:background="#eab676"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
@@ -44,15 +44,15 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/clientmessagefield"
+            android:id="@+id/requestermessagefield"
             android:layout_width="0dp"
             android:layout_weight="75"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:inputType="textPersonName" />
+            android:inputType="text" />
 
         <Button
-            android:id="@+id/sendclient"
+            android:id="@+id/sendrequester"
             android:layout_width="0dp"
             android:layout_weight="25"
             android:layout_height="wrap_content"
@@ -74,13 +74,12 @@
             android:layout_width="0dp"
             android:layout_weight="80"
             android:layout_height="wrap_content"
-            android:text="Start client" />
+            android:text="Start requester" />
 
         <View
             android:layout_width="0dp"
             android:layout_weight="10"
             android:layout_height="match_parent">
-
         </View>
 
     </LinearLayout>
@@ -97,7 +96,7 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/clientoutput"
+                android:id="@+id/requesteroutput"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </LinearLayout>

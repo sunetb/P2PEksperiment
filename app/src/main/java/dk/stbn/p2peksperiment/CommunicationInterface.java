@@ -8,4 +8,6 @@ public interface CommunicationInterface {
     //Called by other nodes
     String getId();
 
+    String generateResponse (String request);
+
 }

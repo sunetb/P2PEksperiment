@@ -1,19 +1,49 @@
 package dk.stbn.p2peksperiment;
 
+import static android.content.Context.WIFI_SERVICE;
+
+import android.content.Context;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 public class Util {
+
+    // !!! Often returns 0.0.0.0 on emulator
+    //Modified from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
+    static String getLocalIpAddress(Context c) {
+        WifiManager wifiManager = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            wifiManager = (WifiManager) c.getSystemService(WIFI_SERVICE);
+        }
+        assert wifiManager != null;
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        int ipInt = wifiInfo.getIpAddress();
+        String address = null;
+        try {
+            address = InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        return address;
+    }
 
     //Wait by setting the thread to sleep for 1,5 seconds. Used in DEMO-mode
     static void waitABit() {

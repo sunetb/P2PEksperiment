@@ -9,7 +9,7 @@ import java.net.Socket;
 class Responder implements Runnable {
 
     private MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
-    int clientNumber = 0;
+    int requesterNumber = 0;
 
 
     public Responder(MessageUpdate main) {
@@ -21,53 +21,53 @@ class Responder implements Runnable {
         try {
             ServerSocket serverSocket = new ServerSocket(4444);
 
-            //Always be ready for next client
+            //Always be ready for next requester
             while (true) {
-                phoneHome.updateUI("SERVER: start listening..", true);
-                Socket clientSocket = serverSocket.accept();//Accept is called when a client connects
-                phoneHome.updateUI("SERVER connection accepted", true);
-                clientNumber++;
-                new RemoteClient(clientSocket, clientNumber, phoneHome).start();
+                phoneHome.updateUI("RESPONDER: start listening..", true);
+                Socket socket = serverSocket.accept();//Accept is called when a requester connects
+                phoneHome.updateUI("RESPONDER connection accepted", true);
+                requesterNumber++;
+                new RemoteRequester(socket, requesterNumber).start();
 
-            }//while listening for clients
+            }//while listening for requesters
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }//run
-}//MyServerThread
 
-//Enabling several clients to one server, by running the communication with each client in its own thread.
-//Maybe a better name then RemoteClient would be "ClientConnection", "ClientSocket" or similar
-class RemoteClient extends Thread { //This belongs to the server
 
-    MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
-    private final Socket client; //The client socket of the server
-    private int number; //This client's ID
+//Inner class representing a remote node to contact tis node.
+//Several nodes' requesters may contact this node's responder.
+//The responder starts each remote requester in its own thread.
+
+class RemoteRequester extends Thread { //Belongs to the responder
+
+    private final Socket socket; //The requester socket of the responder
+    private int number; //This requester ID
 
     private boolean carryOn = true;
     public void endConversation(){
         carryOn = false;
     }
-    public RemoteClient (Socket clientSocket, int number, MessageUpdate main) {
-        this.client = clientSocket;
+    public RemoteRequester(Socket socket, int number) {
+        this.socket = socket;
         this.number = number;
-        this.phoneHome = main;
     }
     public void run() {
 
         try {
-            DataInputStream instream = new DataInputStream(client.getInputStream());
-            DataOutputStream outstream = new DataOutputStream(client.getOutputStream());
+            DataInputStream instream = new DataInputStream(socket.getInputStream());
+            DataOutputStream outstream = new DataOutputStream(socket.getOutputStream());
 
             //Run conversation server-side
             while (carryOn) {
-                //Recieving message from remote client
+                //Recieving message from remote requester
                 String request = (String) instream.readUTF();
-                phoneHome.updateUI("Client " + number + " says: " + request, true);
+                phoneHome.updateUI("Requester " + number + " says: " + request, true);
                 //Generating response
-                String response = generateResponse(request);
-                phoneHome.updateUI("Reply to client " + number + ": " + response, true);
+                String response = CommunicationHandler.getInstance().generateResponse(request);
+                phoneHome.updateUI("Reply to requester " + number + ": " + response, true);
                 //Write message (answer) to client
                 outstream.writeUTF(response);
                 outstream.flush();
@@ -75,26 +75,17 @@ class RemoteClient extends Thread { //This belongs to the server
             }
 
             //Closing everything down
-            client.close();
-            phoneHome.updateUI("SERVER: Remote client " + number + " socket closed", true);
+            socket.close();
+            phoneHome.updateUI("RESPONDER: Remote requester " + number + " socket closed", true);
             instream.close();
-            phoneHome.updateUI("SERVER: Remote client " + number + " inputstream closed", true);
+            phoneHome.updateUI("RESPONDER: Remote requester " + number + " inputstream closed", true);
             outstream.close();
-            phoneHome.updateUI("SERVER: Remote client  " + number + "outputstream closed", true);
+            phoneHome.updateUI("RESPONDER: Remote requester  " + number + "outputstream closed", true);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private String generateResponse(String req){
-        if (req.equals("____Bye bye!!____")){
-            carryOn = false;
-            return "See you";
-        }
-        //HINT: This is where you could react to "signals" or "requests" from the client
-        // E.g. some if(req.equals(...))-statements
-        String resp =  Util.getFood(); //HINT: This is where you could choose an appropriate response
-        return resp;
-    }
+}//MyResponderThread
 }

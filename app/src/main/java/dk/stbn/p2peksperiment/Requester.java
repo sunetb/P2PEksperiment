@@ -26,12 +26,12 @@ public class Requester implements Runnable{
         public void run() {
 
             try {
-                phoneHome.updateUI("CLIENT: starting client socket ", false);
-                Socket connectionToServer = new Socket(remoteIP, 4444);
-                phoneHome.updateUI("CLIENT: client connected ", false);
+                phoneHome.updateUI("REQUESTER: starting requester socket ", false);
+                Socket socket = new Socket(remoteIP, 4444);
+                phoneHome.updateUI("REQUESTER: requester connected ", false);
 
-                DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
-                DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
+                DataInputStream instream = new DataInputStream(socket.getInputStream());
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
                 while (carryOn) {
                     //Write message to outstream
@@ -41,7 +41,7 @@ public class Requester implements Runnable{
                     phoneHome.updateUI("I said:______" + message, false);
                     //Read message from server
                     String messageFromServer = instream.readUTF();
-                    phoneHome.updateUI("Server says:_" + messageFromServer, false);
+                    phoneHome.updateUI("RESPONDER says:_" + messageFromServer, false);
                     //Simple wait
                     Util.waitABit();
                 }
@@ -50,11 +50,11 @@ public class Requester implements Runnable{
                 out.flush();
                 //Closing down
                 instream.close();
-                phoneHome.updateUI("CLIENT: closed inputstream", false);
+                phoneHome.updateUI("REQUESTER: closed inputstream", false);
                 out.close();
-                phoneHome.updateUI("CLIENT: closed outputstream", false);
-                connectionToServer.close();
-                phoneHome.updateUI("CLIENT: closed socket", false);
+                phoneHome.updateUI("REQUESTER: closed outputstream", false);
+                socket.close();
+                phoneHome.updateUI("REQUESTER: closed socket", false);
 
             } catch (IOException e) {
                 e.printStackTrace();
