@@ -63,13 +63,20 @@ class RemoteRequester extends Thread { //Belongs to the responder
             DataInputStream instream = new DataInputStream(socket.getInputStream());
             DataOutputStream outstream = new DataOutputStream(socket.getOutputStream());
 
+            String request = (String) instream.readUTF();
+            phoneHome.updateUI("Requester " + number + " says: " + request, true);
+            //Generating response
+            String response = CommunicationHandler.getInstance().generateResponse("ID");
+            outstream.writeUTF(response);
+            outstream.flush();
+            Util.waitABit();
             //Run conversation server-side
             while (carryOn) {
                 //Recieving message from remote requester
-                String request = (String) instream.readUTF();
+                request = (String) instream.readUTF();
                 phoneHome.updateUI("Requester " + number + " says: " + request, true);
                 //Generating response
-                String response = CommunicationHandler.getInstance().generateResponse(request);
+                response = CommunicationHandler.getInstance().generateResponse(request);
                 phoneHome.updateUI("Reply to requester " + number + ": " + response, true);
                 //Write message (answer) to client
                 outstream.writeUTF(response);

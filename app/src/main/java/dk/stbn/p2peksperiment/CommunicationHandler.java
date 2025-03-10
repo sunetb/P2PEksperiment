@@ -41,7 +41,7 @@ public class CommunicationHandler implements CommunicationInterface {
             return "See you";
         }
         if (req.equals("ID")){
-            return getId();
+            return "Res NodeID: " + getId();
         }
        //Default
         return Util.getFood();
@@ -49,7 +49,9 @@ public class CommunicationHandler implements CommunicationInterface {
 
     @Override
     public String generateRequest(String response){
-
+        if (response.equals("ID")){
+            return "Req NodeID: " + getId();
+        }
         return Util.getAnimal();
     }
 

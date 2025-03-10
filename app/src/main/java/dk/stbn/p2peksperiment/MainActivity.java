@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 ip_submitted = true;
                 saveIP(ipInputField.getText().toString());
                 startRequesterButton.setEnabled(true);
-                startRequesterButton.setText("restart");
+                startRequesterButton.setText("start");
                 submitIPButton.setEnabled(false);
             }
         }

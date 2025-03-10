@@ -33,15 +33,26 @@ public class Requester implements Runnable{
                 DataInputStream instream = new DataInputStream(socket.getInputStream());
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
+                //Hello part:
+                String message = "ID";
+                out.writeUTF(message);
+                out.flush();
+                String messageFromResponder = instream.readUTF();
+                phoneHome.updateUI("RESPONDER says:_" + messageFromResponder, false);
+                //Simple wait
+                Util.waitABit();
+
+
+
                 while (carryOn) {
                     //Write message to outstream
-                    String message = Util.getAnimal();
+                    message = CommunicationHandler.getInstance().generateRequest(messageFromResponder);
                     out.writeUTF(message);
                     out.flush();
                     phoneHome.updateUI("I said:______" + message, false);
                     //Read message from server
-                    String messageFromServer = instream.readUTF();
-                    phoneHome.updateUI("RESPONDER says:_" + messageFromServer, false);
+                    messageFromResponder = instream.readUTF();
+                    phoneHome.updateUI("RESPONDER says:_" + messageFromResponder, false);
                     //Simple wait
                     Util.waitABit();
                 }
