@@ -44,58 +44,58 @@ class Responder implements Runnable {
 //Several nodes' requesters may contact this node's responder.
 //The responder starts each remote requester in its own thread.
 
-class RemoteRequester extends Thread { //Belongs to the responder
+    class RemoteRequester extends Thread { //Belongs to the responder
 
-    private final Socket socket; //The requester socket of the responder
-    private int number; //This requester ID
+        private final Socket socket; //The requester socket of the responder
+        private int number; //This requester ID
 
-    private boolean carryOn = true;
-    public void endConversation(){
-        carryOn = false;
-    }
-    public RemoteRequester(Socket socket, int number) {
-        this.socket = socket;
-        this.number = number;
-    }
-    public void run() {
+        private boolean carryOn = true;
+        public void endConversation(){
+            carryOn = false;
+        }
+        public RemoteRequester(Socket socket, int number) {
+            this.socket = socket;
+            this.number = number;
+        }
+        public void run() {
 
-        try {
-            DataInputStream instream = new DataInputStream(socket.getInputStream());
-            DataOutputStream outstream = new DataOutputStream(socket.getOutputStream());
+            try {
+                DataInputStream instream = new DataInputStream(socket.getInputStream());
+                DataOutputStream outstream = new DataOutputStream(socket.getOutputStream());
 
-            String request = (String) instream.readUTF();
-            phoneHome.updateUI("Requester " + number + " says: " + request, true);
-            //Generating response
-            String response = CommunicationHandler.getInstance().generateResponse("ID");
-            outstream.writeUTF(response);
-            outstream.flush();
-            Util.waitABit();
-            //Run conversation server-side
-            while (carryOn) {
-                //Recieving message from remote requester
-                request = (String) instream.readUTF();
+                String request = (String) instream.readUTF();
                 phoneHome.updateUI("Requester " + number + " says: " + request, true);
-                //Generating response
-                response = CommunicationHandler.getInstance().generateResponse(request);
-                phoneHome.updateUI("Reply to requester " + number + ": " + response, true);
-                //Write message (answer) to client
+
+                //Primitive "hello"-part
+                String response = CommunicationHandler.getInstance().generateResponse("ID");
                 outstream.writeUTF(response);
                 outstream.flush();
-                Util.waitABit();//HINT You might want to remove this at some point
+                Util.waitABit();
+                //Run conversation server-side
+                while (carryOn) {
+                    //Recieving message from remote requester
+                    request = (String) instream.readUTF();
+                    phoneHome.updateUI("Requester " + number + " says: " + request, true);
+                    //Generating response
+                    response = CommunicationHandler.getInstance().generateResponse(request);
+                    phoneHome.updateUI("Reply to requester " + number + ": " + response, true);
+                    //Write message (answer) to client
+                    outstream.writeUTF(response);
+                    outstream.flush();
+                    Util.waitABit();//HINT You might want to remove this at some point
+                }
+
+                //Closing everything down
+                socket.close();
+                phoneHome.updateUI("RESPONDER: Remote requester " + number + " socket closed", true);
+                instream.close();
+                phoneHome.updateUI("RESPONDER: Remote requester " + number + " inputstream closed", true);
+                outstream.close();
+                phoneHome.updateUI("RESPONDER: Remote requester  " + number + "outputstream closed", true);
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-            //Closing everything down
-            socket.close();
-            phoneHome.updateUI("RESPONDER: Remote requester " + number + " socket closed", true);
-            instream.close();
-            phoneHome.updateUI("RESPONDER: Remote requester " + number + " inputstream closed", true);
-            outstream.close();
-            phoneHome.updateUI("RESPONDER: Remote requester  " + number + "outputstream closed", true);
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-    }
-
-}//MyResponderThread
+     }//MyResponderThread
 }

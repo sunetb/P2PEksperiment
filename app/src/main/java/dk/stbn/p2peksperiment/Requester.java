@@ -33,7 +33,7 @@ public class Requester implements Runnable{
                 DataInputStream instream = new DataInputStream(socket.getInputStream());
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
-                //Hello part:
+                //Primitive "hello" part:
                 String message = "ID";
                 out.writeUTF(message);
                 out.flush();
@@ -42,15 +42,13 @@ public class Requester implements Runnable{
                 //Simple wait
                 Util.waitABit();
 
-
-
                 while (carryOn) {
                     //Write message to outstream
                     message = CommunicationHandler.getInstance().generateRequest(messageFromResponder);
                     out.writeUTF(message);
                     out.flush();
                     phoneHome.updateUI("I said:______" + message, false);
-                    //Read message from server
+                    //Read message from Responder
                     messageFromResponder = instream.readUTF();
                     phoneHome.updateUI("RESPONDER says:_" + messageFromResponder, false);
                     //Simple wait

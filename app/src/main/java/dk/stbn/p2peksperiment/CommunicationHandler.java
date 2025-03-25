@@ -4,16 +4,24 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+
+/* NOTE:
+* This class is VERY primitive and that is on purpose.
+* The idea is give you a starting point to work from.
+*
+* Having this class and the interface is just
+* a suggestion for how to keep all communication
+* in one place. And somewhat well-defined.
+* You may want to do it differently.
+* */
+
 public class CommunicationHandler implements CommunicationInterface {
 
     private static CommunicationHandler instance;
 
     String nodeID = "_";
-    //One node consist of a requester and a responder.
-    // Both of them can talk to strangers
 
-
-    //Shared data; Initialised by setState
+    //Shared data
     private CommunicationHandler(){}
 
     public static CommunicationHandler getInstance() {
@@ -23,7 +31,6 @@ public class CommunicationHandler implements CommunicationInterface {
         return instance;
     }
 
-    //This is still almost a stub class
     @Override
     public void assignID(String ip) {
         this.nodeID = Util.hashIt(ip);
@@ -52,14 +59,7 @@ public class CommunicationHandler implements CommunicationInterface {
         if (response.equals("ID")){
             return "Req NodeID: " + getId();
         }
+        //Default
         return Util.getAnimal();
     }
-
-
-
-
-
-
-
-
 }

@@ -16,6 +16,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     * Note:
     * "Responder" was "server"
     * "Requester" was "client"
+    *
+    * A Responder has the role of waiting and listening
+    * until a Requester makes a request.
+    * Then request-response from there..
     * */
 
     // UI-elements
@@ -26,7 +30,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // Global data
     private Responder responderThread;
     private Requester requesterThread;
-
 
 
     // UI related state
@@ -64,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //1 Show it
         String thisIpAddress = Util.getLocalIpAddress(this);
         responderTitleTv.append("  "+thisIpAddress);
-        //2: Us it for Node ID
+        //2: Use it for Node ID
         CommunicationHandler.getInstance().assignID(thisIpAddress);
         updateUI("- - - NODE ID:  \n" + CommunicationHandler.getInstance().getId() + "\n", true);
 
@@ -72,7 +75,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         responderThread = new Responder(this);
         new Thread(responderThread).start();
         updateUI("- - - RESPONDER STARTED AUTOMATICALLY - - -\n", true);
-
     }
 
     @Override
@@ -94,7 +96,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 requesterStarted = false;
                 ip_submitted = false;
                 updateUI("- - - REQUESTER ENDED - - - \n", false);
-
             }
         } else if (view == submitIPButton) {
             if (!ip_submitted) {
@@ -120,7 +121,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 if (fromResponder) {
                     responderInfoTv.append(message + "\n");
-
                 } else {
                     requesterInfoTv.append(message + "\n");
                 }
