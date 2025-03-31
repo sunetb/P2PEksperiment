@@ -28,196 +28,151 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     // UI-elements
-    private Button startClient, startServer, serverSend, clientSend;
-    private TextView serverInfoTv, clientInfoTv;
-    private EditText serverMessageField, clientMessageField;
+    Button startKlient, startServer, send;
+    TextView ipInfo;
+    EditText messageField;
 
     // Logging/status messages
-    private String serverinfo = "SERVER LOG:";
-    private String clientinfo = "CLIENT LOG: ";
+    String info  = "LOG: \n";
+
     //Global data
-    private final int PORT = 4444;
-    private String THIS_IP_ADDRESS = "";
-    private String REMOTE_IP_ADDRESS = "";
-    private ArrayList<String> ips = new ArrayList();
+    final int PORT = 4444;
+    String IP_ADDRESS = "127.0.0.1"; //Default localhost - not really useful
+    ArrayList<String> ips = new ArrayList();
 
-    private String theMessage = ""; //Where user input is stored
-    private Thread serverThread = new Thread(new MyServerThread());
-    private Thread clientThread = new Thread(new MyClientThread());
+    String theMessage;
+    Thread serverTråd = new Thread(new MinServerTråd());
+    Thread klientTråd = new Thread(new MinKlientTråd());
 
-    //---Some state---
-    private boolean ip_submitted = false;
-
+    //state
+    boolean ip_submitted = false;
+    boolean iAmServer = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //UI boilerplate
-        startClient = findViewById(R.id.button);
+        //String phoneModel = Build.MODEL;
+
+        startKlient = findViewById(R.id.button);
+        startKlient.setOnClickListener(this);
         startServer = findViewById(R.id.button2);
-
-        serverInfoTv = findViewById(R.id.serveroutput);
-        clientInfoTv = findViewById(R.id.clientoutput);
-        serverSend = findViewById(R.id.sendserver);
-        clientSend = findViewById(R.id.sendclient);
-
-        startClient.setOnClickListener(this);
         startServer.setOnClickListener(this);
-        serverSend.setOnClickListener(this);
-        clientSend.setOnClickListener(this);
-        serverSend.setEnabled(false); //Disable Send button until connection is established
-        clientSend.setEnabled(false);
-        serverMessageField = findViewById(R.id.servermessagefield);
-        serverMessageField.setHint("Press START SERVER");
-        clientMessageField = findViewById(R.id.clientmessagefield);
-        clientMessageField.setHint("Press START CLIENT");
-        addHardcodedIPs();
-    }
+        ipInfo = findViewById(R.id.ipinfo);
+        //startKlient.setEnabled(false);
+        send = findViewById(R.id.sendclient);
+        send.setOnClickListener(this);
+        messageField = findViewById(R.id.clientmessagefield);
+        String localIP = null;
+        try {
+            localIP = getLocalIpAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        messageField.setText(localIP);
 
 
 
-
-    private void addHardcodedIPs() {
-        ips.add("192.168.10.106");//Sune home
-        ips.add("192.168.10.187");//Sune home
-        ips.add("192.168.10.118");//Sune home
-        ips.add("10.90.17.158");//RucIOT
 
     }
 
     @Override
     public void onClick(View view) {
 
-        //  - - Client - -
-        if(view == startClient) {
-            if(!ip_submitted){
-                cUpdate("Enter server IP-address");
-                clientMessageField.setHint("Enter server-IP-address");
-                startClient.setEnabled(false);
-                clientSend.setText("submit IP");
-                clientSend.setEnabled(true);
-                return;
-            }
-
-            clientMessageField.setHint("Write something");
-            clientThread.start();
-            startClient.setEnabled(false); //Don't start two clients
-            clientinfo += "- - - CLIENT STARTED - - - \n";
-
+        if(view == startKlient) {
+            // new Handler().postDelayed(new Runnable() {
+            //   @Override
+            // public void run() {
+            iAmServer = false;
+            klientTråd.start();
+            //}
+            //}, 50); //din kode køres om 50 milisekunder
+            startKlient.setEnabled(false);
+            startServer.setEnabled(false);
+            info += "I AM CLIENT\n";
         }
-        else if(view == clientSend){
-            theMessage = clientMessageField.getText().toString();
-
-            if (!ip_submitted){
-                ip_submitted = true;
-                clientSend.setText("send");
-                REMOTE_IP_ADDRESS = theMessage;
-                startClient.setEnabled(true);
-                clientMessageField.setHint("Now press START CLIENT");
-                clientSend.setEnabled(true);
-                return;
-            }
-            clientMessageField.setText("");
-            clientMessageField.setHint("type message here...");
-            synchronized (clientThread) {
-
-                clientThread.notify();
-
-            }
-            clientSend.setEnabled(false);
-        }
-
-        //  - - Server - -
-
         else if (view == startServer){
-            serverThread.start();
-            serverinfo += "- - - SERVER STARTED - - -\n";
-
-            //Obtain my local IP-address
-            try {
-                THIS_IP_ADDRESS = getLocalIpAddress();
-                sUpdate("SERVER: Automatic SERVER IP: " + THIS_IP_ADDRESS);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
-            startServer.setEnabled(false); //Don't start two servers
-            serverSend.setEnabled(false); //Client initiates conversation
-            serverMessageField.setHint("Wait for client to initiate");
+            iAmServer = true;
+            serverTråd.start();
+            startServer.setEnabled(false);
+            startKlient.setEnabled(false);
+            info += "I AM SERVER\n";
         }
-        else if (view == serverSend){
+        else if (view == send){
+            theMessage = messageField.getText().toString();
 
-            theMessage = serverMessageField.getText().toString();
-            serverMessageField.setText("");
-            serverMessageField.setHint("type message here...");
+                if (iAmServer) {
+                    synchronized (serverTråd) {
+                        update("onclick notify server");
+                        serverTråd.notify();
+                    }
+                }
+                else {
+                    synchronized (klientTråd) {
+                        update("onclick notify client");
+                        klientTråd.notify();
+                    }
+                }
+            }
 
+    }
 
-
-
-                synchronized (serverThread) {
-                    //update("onclick notify server");
-                    serverThread.notify();
+    class MinServerTråd implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    IP_ADDRESS = getLocalIpAddress();
+                    update("SERVER: Automatic SERVER IP: " + IP_ADDRESS);
+                    //Galaxy s10e IOT 10.90.17.158
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
                 }
 
 
 
-
-        }
-
-
-    }//onclick
-
-    class MyServerThread implements Runnable {
-        @Override
-        public void run() {
-            //Alwway be ready for next client
-            while (true) {
-
                 try {
-                    //sUpdate("SERVER: starting serversocket");
-                    ServerSocket serverSocket = new ServerSocket(4444);
-                    sUpdate("SERVER: start listening..");
-                    Socket klientSocket = serverSocket.accept();
-                    sUpdate("SERVER connection accepted");
 
+                    // update("SERVER: starting serversocket");
+                    ServerSocket serverSocket = new ServerSocket(4444);
+
+                    update("SERVER: start listening..");
+                    Socket klientSocket = serverSocket.accept();
+                    update("SERVER connection accepted");
                     DataInputStream instream = new DataInputStream(klientSocket.getInputStream());
                     DataOutputStream outstream = new DataOutputStream(klientSocket.getOutputStream());
+                    //Scanner input = new Scanner(System.in);
 
-                    //Start conversation
                     boolean carryOn = true;
                     while(carryOn) {
 
                         String str = (String) instream.readUTF();
-                        sUpdate("Client says: " + str);
-                        serverButtonEnable(true);
-                        synchronized (serverThread){
-                            serverThread.wait(); //Waiting for user input
-                        }
-                        String answer = theMessage;
+                        update("Client says: " + str);
+                        //update("Type message (Enter sends message)");
+                        wait();
+                        String answer = theMessage;//do something interesting here
                         outstream.writeUTF(answer);
                         outstream.flush();
                         carryOn = !str.equalsIgnoreCase("bye");
                     }
-                    //Closing everything down
                     serverSocket.close();
-                    sUpdate("SERVER: Server socket closed");
                     klientSocket.close();
-                    sUpdate("SERVER: Client socket closed");
                     instream.close();
-                    sUpdate("SERVER: inputstream closed");
-                    outstream.close();
-                    sUpdate("SERVER: outputstream closed");
-                } catch (IOException e) {
-                    sUpdate("oops!!");
+                    //input.close();
+                } catch (
+                        IOException e) {
+                    update("oops!!");
                     throw new RuntimeException(e);
+
+
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+                //update("SERVER (later): Automatic SERVER IP: " + IP_ADDRESS);
             }
         }
     }
 
-//Copied from https://www.tutorialspoint.com/sending-and-receiving-data-with-sockets-in-android
 private String getLocalIpAddress() throws UnknownHostException {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         assert wifiManager != null;
@@ -225,98 +180,88 @@ private String getLocalIpAddress() throws UnknownHostException {
         int ipInt = wifiInfo.getIpAddress();
         return InetAddress.getByAddress(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()).getHostAddress();
     }
-    class MyClientThread implements Runnable {
+    class MinKlientTråd  implements Runnable {
         @Override
         public void run() {
 
             try {
-                cUpdate("CLIENT: starting client socket ");
-                Socket connectionToServer = new Socket(REMOTE_IP_ADDRESS, 4444);
-                cUpdate("CLIENT: client connected ");
+                //Scanner input = new Scanner(System.in);
+                //update("Please write ip of server (Type 'c' to use hardcoded: 10.90.17.181) ");
+                //String ip = input.nextLine();
+                //if (ip.equalsIgnoreCase("c"))
+                //    ip = "10.90.17.181";
 
-                DataInputStream instream = new DataInputStream(connectionToServer.getInputStream());
-                //cUpdate(""+instream);
-                DataOutputStream out = new DataOutputStream(connectionToServer.getOutputStream());
-                //cUpdate("CLIENT: made outputstream");
+
+                if(!ip_submitted){
+                    update("Please submit an IP-address");
+                  synchronized (this) {
+                      try{
+                          update("waiting for ip...");
+                          wait();
+                          update("after wait");
+                          IP_ADDRESS = theMessage;
+                          ip_submitted = true;
+                          update("CLIENT: starting client socket ");
+                      } catch (InterruptedException e) {
+                          throw new RuntimeException(e);
+                      }
+                  }
+
+                }
+                Socket klientsocket = new Socket(IP_ADDRESS, 4444);//Fra emulator, indstillinger
+
+                update("CLIENT: client connected ");
+
+                DataInputStream instream = new DataInputStream(klientsocket.getInputStream());
+                DataOutputStream out = new DataOutputStream(klientsocket.getOutputStream());
+                update("CLIENT: made outputstream");
                 boolean carryOn = true;
                 while(carryOn) {
-                    clientButtonEnable(true);
-                    synchronized (clientThread) {
-                    try{
-                        //cUpdate("Waiting for your message...");
-                        clientThread.wait();
-                        //cUpdate("after wait");
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    }
-                    String besked = theMessage;
-                    out.writeUTF(besked);
-                    //cUpdate("CLIENT: wrote to outputstream");
-                    out.flush();
-                    //cUpdate("CLIENT: flushed");
-                    String messageFromServer = instream.readUTF();
-                    cUpdate("Server says: " +messageFromServer);
 
+                    update("Type message (Enter sends the message)");
+                  wait();
+                   String besked = theMessage;
+                    out.writeUTF(besked);
+                    update("CLIENT: wrote to outputstream");
+
+                    out.flush();
+                    //update("CLIENT: flushed");
+                    String messageFromServer = instream.readUTF();
+                    update("Server says: " +messageFromServer);
                     carryOn = !messageFromServer.equalsIgnoreCase("bye");
                 }
+                //input.close();
+                update("CLIENT: closed Scanner");
                 instream.close();
-                cUpdate("CLIENT: closed inputstream");
+                update("CLIENT: closed inputstream");
                 out.close();
-                cUpdate("CLIENT: closed outputstream");
-                connectionToServer.close();
-                cUpdate("CLIENT: closed socket");
-
+                update("CLIENT: closed outputstream");
+                klientsocket.close();
+                update("CLIENT: closed socket");
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-        }//run()
-    } //class MyClientThread
+        }//Run()
+    } //class MinKlientTråd
 
-    //The below four methods are for updating UI-elements on the main thread
-    public void sUpdate(String message){
-        //Run this code on UI-thread
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                serverinfo = message + "\n" + serverinfo;
-                serverInfoTv.setText(serverinfo);
-            }
-        });
-
-    }
-    public void cUpdate(String message){
-        System.out.println(message);
+    public void update (String besked){
+        System.out.println(besked);
 
         //Run this code on UI-thread
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                clientinfo = message + "\n" + clientinfo;
-                clientInfoTv.setText(clientinfo);
+                info += besked + "\n";
+                ipInfo.setText(info);
             }
         });
 
     }
-    void serverButtonEnable(boolean enabled){
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                serverSend.setEnabled(enabled);
-            }
-        });
-    }
 
-    void clientButtonEnable(boolean enabled){
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                clientSend.setEnabled(enabled);
-            }
-        });
-    }
+
 
 
 }
