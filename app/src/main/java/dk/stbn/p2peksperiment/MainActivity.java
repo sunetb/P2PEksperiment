@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
          //Choose which XML-file to use for UI
         setContentView(R.layout.chat_like_ui);
 
-
         //on configuration change, e.g. screen rotation
         requesterStarted = (CommunicationHandler.getInstance().req != null);
         responderStarted = (CommunicationHandler.getInstance().resp != null);
@@ -102,8 +101,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         else{
             updateUI("Welcome back!\n", true);
         }
-
-    }
+   }
 
     @Override
     public void onClick(View view) {
@@ -131,7 +129,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     new Thread(requesterThread).start();
                     requesterStarted = true;
                     updateUI("- - - REQUESTER STARTED - - - \n", false);
-                    requesterMessageInput.setHint("Start typing toyr message");
+                    requesterMessageInput.setHint("Start typing your message");
                 }
             }//Normal conversation from here
             else if (view == reqSendButton){
@@ -184,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 @Override
                 public void run() {
                     respSendButton.setEnabled(true);
+                    responderMessageInput.setHint("Start typing your message");
                 }
             });
     }
