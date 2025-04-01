@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:context=".MainActivity">
+    android:orientation="vertical"
+    tools:context=".MainActivity">
 
 
 <LinearLayout
@@ -13,7 +14,7 @@
     android:orientation="horizontal">
 
     <EditText
-        android:id="@+id/servermessagefield"
+        android:id="@+id/respmessagefield"
         android:layout_width="0dp"
         android:layout_weight="75"
         android:layout_height="wrap_content"
@@ -21,7 +22,7 @@
         android:inputType="textPersonName" />
 
     <Button
-        android:id="@+id/sendrequester"
+        android:id="@+id/respsend"
         android:layout_width="0dp"
         android:layout_weight="25"
         android:layout_height="wrap_content"
@@ -36,11 +37,11 @@
     android:orientation="horizontal">
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/reqbutton"
         android:layout_width="0dp"
         android:layout_weight="33"
         android:layout_height="wrap_content"
-        android:text="Start klient" />
+        android:text="Start requester" />
 
     <View
         android:layout_width="0dp"
@@ -50,20 +51,21 @@
     </View>
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/respbutton"
         android:layout_height="wrap_content"
         android:layout_width="0dp"
         android:layout_weight="33"
-        android:text="Start server" />
+        android:text="Start Responder" />
 
 </LinearLayout>
 <TextView
-    android:text="Server"
+    android:id="@+id/respondertitle"
+    android:text="Reponder"
     android:background="#eab676"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"/>
 <ScrollView
-    android:id="@+id/scrollViewServer"
+    android:id="@+id/respscroll"
     android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="40">
@@ -74,14 +76,14 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/ipinfo"
+            android:id="@+id/responderoutput"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Hello World!" />
     </LinearLayout>
 </ScrollView>
 <TextView
-    android:text="Client"
+    android:text="Requester"
     android:background="#eab676"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"/>
@@ -92,7 +94,7 @@
     android:orientation="horizontal">
 
     <EditText
-        android:id="@+id/clientmessagefield"
+        android:id="@+id/requestermessagefield"
         android:layout_width="0dp"
         android:layout_weight="75"
         android:layout_height="wrap_content"
@@ -100,7 +102,7 @@
         android:inputType="textPersonName" />
 
     <Button
-        android:id="@+id/sendclient"
+        android:id="@+id/reqsend"
         android:layout_width="0dp"
         android:layout_weight="25"
         android:layout_height="wrap_content"
@@ -108,7 +110,7 @@
 
 </LinearLayout>
 <ScrollView
-    android:id="@+id/scrollViewClient"
+    android:id="@+id/reqscroll"
     android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="40">
@@ -119,7 +121,7 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/clientoutput"
+            android:id="@+id/requsteroutput"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Hello World!" />

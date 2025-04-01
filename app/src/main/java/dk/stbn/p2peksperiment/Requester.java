@@ -1,5 +1,7 @@
 package dk.stbn.p2peksperiment;
 
+import android.app.Activity;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -16,6 +18,7 @@ public class Requester implements Runnable{
     public Requester(String remoteIP, MessageUpdate main) {
         this.remoteIP = remoteIP;
         phoneHome = main;
+        CommunicationHandler.getInstance().req = this;
     }
 
     public void endConversation(){
@@ -72,6 +75,8 @@ public class Requester implements Runnable{
 
         }//run()
 
-
+    public void setPhoneHome(Activity act){
+                this.phoneHome = (MessageUpdate) act;
+    }
 
 }

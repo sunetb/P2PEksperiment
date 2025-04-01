@@ -1,6 +1,7 @@
 package dk.stbn.p2peksperiment;
 
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -22,10 +23,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     * Then request-response from there..
     * */
 
-    // UI-elements
-    private Button startRequesterButton, submitIPButton;
+    //Trick to prevent crash on config-change
+
+    //// UI-elements
+   //Test-state
+    private Button requesterButton, responderButton, reqSend, respSend;;
     private TextView responderInfoTv, requesterInfoTv, responderTitleTv;
-    private EditText ipInputField;
+    private EditText requesterMessage, responderMessage;
 
     // Global data
     private Responder responderThread;
@@ -35,75 +39,90 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // UI related state
     private boolean ip_submitted = false;
 
-    boolean requesterStarted = false;
-
+    //Check if an instance is already running
+    boolean requesterStarted;
+    boolean responderStarted;
+    boolean testState = true;
+    boolean chatState;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        chatState = !testState;
+        if (chatState) setContentView(R.layout.chat_like_ui);
+        else setContentView(R.layout.activity_main);
+        requesterStarted = (CommunicationHandler.getInstance().req != null);
+        responderStarted = (CommunicationHandler.getInstance().resp != null);
+        System.out.println("Responder started? " + responderStarted);
+        checkReferences();
 
         //UI boilerplate
-        startRequesterButton = findViewById(R.id.button);
+        requesterButton = findViewById(R.id.button);
+        responderButton = findViewById(R.id.sendrequester);
+        requesterMessage = findViewById(R.id.requestermessagefield);
+        responderTitleTv = findViewById(R.id.respondertitle);
         responderInfoTv = findViewById(R.id.responderoutput);
         requesterInfoTv = findViewById(R.id.requesteroutput);
-        responderTitleTv = findViewById(R.id.respondertitle);
-        submitIPButton = findViewById(R.id.sendrequester);
-        ipInputField = findViewById(R.id.requestermessagefield);
+
 
         //Setting click-listeners on buttons
-        startRequesterButton.setOnClickListener(this);
-        submitIPButton.setOnClickListener(this);
+        requesterButton.setOnClickListener(this);
+        responderButton.setOnClickListener(this);
 
         //Setting some UI state
-        String lastIP = getSavedIP();
-        if (lastIP.equals("no"))
-            ipInputField.setHint("Submit IP-address");
-        else
-            ipInputField.setText(lastIP);
+        if (!requesterStarted) {
+            String lastIP = getSavedIP();
+            if (lastIP.equals("no"))
+                requesterMessage.setHint("Submit IP-address");
+            else
+                requesterMessage.setText(lastIP);
 
-        startRequesterButton.setEnabled(false); //deactivates the button
+            requesterButton.setEnabled(false); //deactivates the button
 
-        //Getting the IP address of the device
-        //1 Show it
-        String thisIpAddress = Util.getLocalIpAddress(this);
-        responderTitleTv.append("  "+thisIpAddress);
-        //2: Use it for Node ID
-        CommunicationHandler.getInstance().assignID(thisIpAddress);
-        updateUI("- - - NODE ID:  \n" + CommunicationHandler.getInstance().getId() + "\n", true);
 
-        //Starting the Responder thread
-        responderThread = new Responder(this);
-        new Thread(responderThread).start();
-        updateUI("- - - RESPONDER STARTED AUTOMATICALLY - - -\n", true);
+            //Getting the IP address of the device
+            //1 Show it
+            String thisIpAddress = Util.getLocalIpAddress(this);
+            responderTitleTv.append("  "+thisIpAddress);
+            //2: Use it for Node ID
+            CommunicationHandler.getInstance().assignID(thisIpAddress);
+            updateUI("- - - NODE ID:  \n" + CommunicationHandler.getInstance().getId() + "\n", true);
+        }
+        if (!responderStarted){
+            //Starting the Responder thread
+            responderThread = new Responder(this);
+            new Thread(responderThread).start();
+            updateUI("- - - RESPONDER STARTED AUTOMATICALLY - - -\n", true);
+        }
     }
+
 
     @Override
     public void onClick(View view) {
 
-        if (view == startRequesterButton) {
+        if (view == requesterButton) {
             if (!requesterStarted) { //Start scenario
                 requesterStarted = true;
-                String remoteIP = ipInputField.getText().toString();
+                String remoteIP = requesterMessage.getText().toString();
                 requesterThread = new Requester(remoteIP, this);
                 new Thread(requesterThread).start();
                 updateUI("- - - REQUESTER STARTED - - - \n", false);
-                startRequesterButton.setText("Stop");
+                requesterButton.setText("Stop");
             } else { //Stop scenario
-                requesterThread.endConversation();
-                responderThread.endConversation();
-                startRequesterButton.setEnabled(false);
-                submitIPButton.setEnabled(true);
+                //requesterThread.endConversation();
+                //responderThread.endConversation();
+                requesterButton.setEnabled(false);
+                responderButton.setEnabled(true);
                 requesterStarted = false;
                 ip_submitted = false;
                 updateUI("- - - REQUESTER ENDED - - - \n", false);
             }
-        } else if (view == submitIPButton) {
+        } else if (view == responderButton) {
             if (!ip_submitted) {
                 ip_submitted = true;
-                saveIP(ipInputField.getText().toString());
-                startRequesterButton.setEnabled(true);
-                startRequesterButton.setText("start");
-                submitIPButton.setEnabled(false);
+                saveIP(requesterMessage.getText().toString());
+                requesterButton.setEnabled(true);
+                requesterButton.setText("start");
+                responderButton.setEnabled(false);
             }
         }
 
@@ -134,6 +153,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private String getSavedIP(){
         return PreferenceManager.getDefaultSharedPreferences(this).getString("lastIP", "no");
+    }
+
+    @Override
+    protected void onDestroy() {
+        //avoid memory leak and delete static reference
+        CommunicationHandler.getInstance().act = null;
+        super.onDestroy();
+    }
+
+    //On configuration change, retrieve references for existing threads
+    // and update references to activity
+    private void checkReferences() {
+        if (CommunicationHandler.getInstance().resp != null) {
+            responderThread = CommunicationHandler.getInstance().resp;
+            responderThread.setPhoneHome(this);
+        }
+        if (CommunicationHandler.getInstance().req != null){
+            requesterThread = CommunicationHandler.getInstance().req;
+            requesterThread.setPhoneHome(this);
+        }
+        CommunicationHandler.getInstance().act = this;
     }
 
 }

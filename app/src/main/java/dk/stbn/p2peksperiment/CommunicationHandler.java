@@ -1,5 +1,7 @@
 package dk.stbn.p2peksperiment;
 
+import android.app.Activity;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -18,6 +20,11 @@ import java.security.NoSuchAlgorithmException;
 public class CommunicationHandler implements CommunicationInterface {
 
     private static CommunicationHandler instance;
+
+    //Housekeeping references
+    Responder resp;
+    Requester req;
+    Activity act;
 
     String nodeID = "_";
 

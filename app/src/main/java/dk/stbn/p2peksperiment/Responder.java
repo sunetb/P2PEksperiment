@@ -1,5 +1,7 @@
 package dk.stbn.p2peksperiment;
 
+import android.app.Activity;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,6 +14,7 @@ class Responder implements Runnable {
     int requesterNumber = 0;
 
     public Responder(MessageUpdate main) {
+        CommunicationHandler.getInstance().resp = this;
         this.phoneHome = main;
     }
 
@@ -38,7 +41,9 @@ class Responder implements Runnable {
     public void endConversation() {
         //TODO
     }
-
+    public void setPhoneHome(Activity act){
+        this.phoneHome = (MessageUpdate) act;
+    }
 
 //Inner class representing a remote node to contact tis node.
 //Several nodes' requesters may contact this node's responder.
