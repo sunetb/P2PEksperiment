@@ -23,14 +23,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     * */
 
    //// UI-elements
-    private Button requesterButton, reqSend, respSend;;
-    private TextView responderInfoTv, requesterInfoTv, responderTitleTv;
-    private EditText requesterMessage, responderMessage;
+    private Button startRequesterButton, reqSendButton, respSendButton;;
+    private TextView responderChatlogTv, requesterChatlogTv, responderTitleTv;
+    private EditText requesterMessageInput, responderMessageInput;
 
     // Global data
     private Responder responderThread;
     private Requester requesterThread;
-
+    private String remoteIP;
 
     // UI related state
     private boolean ip_submitted = false;
@@ -39,50 +39,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean requesterStarted;
     boolean responderStarted;
 
-    //Test-state with animals+food or Chat-state where threads wait for the user
-    boolean testState = false;
-    boolean chatState;
+    //Signal that a remote requester has connection to our responder
+    boolean remoteRequesterExists = false;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        chatState = !testState;
+         //Choose which XML-file to use for UI
+        setContentView(R.layout.chat_like_ui);
 
-        //Choose which XML-file to use for UI
-        if (chatState) setContentView(R.layout.chat_like_ui);
-        else setContentView(R.layout.activity_main);
 
-        //Handling screen-rotation
+        //on configuration change, e.g. screen rotation
         requesterStarted = (CommunicationHandler.getInstance().req != null);
         responderStarted = (CommunicationHandler.getInstance().resp != null);
-        checkReferences();
+        ip_submitted = CommunicationHandler.getInstance().ip_Submitted;
+        checkAndUpdateReferences();
 
-        //UI boilerplate
-        requesterButton = findViewById(R.id.reqbutton);
-        reqSend = findViewById(R.id.sendrequester);
-        requesterMessage = findViewById(R.id.requestermessagefield);
+        //UI elements
+        startRequesterButton = findViewById(R.id.reqbutton);
+        reqSendButton = findViewById(R.id.sendrequester);
+        requesterMessageInput = findViewById(R.id.requestermessagefield);
         responderTitleTv = findViewById(R.id.respondertitle);
-        responderInfoTv = findViewById(R.id.responderoutput);
-        requesterInfoTv = findViewById(R.id.requesteroutput);
-
-
+        responderChatlogTv = findViewById(R.id.responderoutput);
+        requesterChatlogTv = findViewById(R.id.requesteroutput);
+        respSendButton = findViewById(R.id.respsend);
+        responderMessageInput = findViewById(R.id.respmessagefield);
         //Setting click-listeners on buttons
-        requesterButton.setOnClickListener(this);
-        reqSend.setOnClickListener(this);
+        startRequesterButton.setOnClickListener(this);
+        reqSendButton.setOnClickListener(this);
+        respSendButton.setOnClickListener(this);
 
-        if (chatState){
-            respSend = findViewById(R.id.respsend);
-            respSend.setOnClickListener(this);
-            responderMessage = findViewById(R.id.respmessagefield);
-        }
-        //Setting some UI state
+        //Setting some initial UI state
+        respSendButton.setEnabled(remoteRequesterExists);
+        startRequesterButton.setEnabled(false);
         if (!requesterStarted) {
+            reqSendButton.setEnabled(true);
+            reqSendButton.setText("Submit");
+
             String lastIP = getSavedIP();
             if (lastIP.equals("no"))
-                requesterMessage.setHint("Submit IP-address");
+                requesterMessageInput.setHint("Submit IP-address");
             else
-                requesterMessage.setText(lastIP);
-
-            requesterButton.setEnabled(false); //deactivates the button
+                requesterMessageInput.setText(lastIP);
 
             //Getting the IP address of the device
             //1 Show it
@@ -92,68 +91,65 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             CommunicationHandler.getInstance().assignID(thisIpAddress);
             updateUI("- - - NODE ID:  \n" + CommunicationHandler.getInstance().getId() + "\n", true);
         }
+
+        //Start listening
         if (!responderStarted){
             //Starting the Responder thread
             responderThread = new Responder(this);
             new Thread(responderThread).start();
             updateUI("- - - RESPONDER STARTED AUTOMATICALLY - - -\n", true);
         }
-    }
+        else{
+            updateUI("Welcome back!\n", true);
+        }
 
+    }
 
     @Override
     public void onClick(View view) {
+        //Start scenario: Submit IP
+        if (view == reqSendButton && !ip_submitted) {
+                ip_submitted = true;
+                remoteIP = requesterMessageInput.getText().toString();
+                saveIP(remoteIP);
+                startRequesterButton.setEnabled(true);
+                startRequesterButton.setText("start");
+                reqSendButton.setEnabled(false);
+                requesterMessageInput.setText("");
+                requesterMessageInput.setHint("Press Start");
+                reqSendButton.setText("send");
+                //Config changes
+                CommunicationHandler.getInstance().ip_Submitted = true;
 
-            if (view == requesterButton) {
-                reqSend.setEnabled(true);
-                requesterButton.setEnabled(false);
+           } //Start scenario: Start requester
+           else if (view == startRequesterButton) {
+                reqSendButton.setEnabled(true);
+                reqSendButton.setText("Send");
+                startRequesterButton.setEnabled(false);
                 if (!requesterStarted) { //Start scenario
-                    requesterStarted = true;
-                    String remoteIP = requesterMessage.getText().toString();
                     requesterThread = new Requester(remoteIP, this);
                     new Thread(requesterThread).start();
+                    requesterStarted = true;
                     updateUI("- - - REQUESTER STARTED - - - \n", false);
-
-                } else
-                    if (testState) { //Stop scenario
-                    //requesterThread.endConversation();
-                    //responderThread.endConversation();
-                    requesterStarted = false;
-                    ip_submitted = false;
-                    updateUI("- - - REQUESTER ENDED - - - \n", false);
+                    requesterMessageInput.setHint("Start typing toyr message");
                 }
-            } else if (view == reqSend) {
-                if (!ip_submitted) {
-                    ip_submitted = true;
-                    saveIP(requesterMessage.getText().toString());
-                    requesterButton.setEnabled(true);
-                    requesterButton.setText("start");
-                    reqSend.setEnabled(false);
-                }
-            }
-            //Continuous conversation, chat-style
-            if(requesterStarted && chatState){
-
-                requesterButton.setEnabled(false);
-
-                if (view == reqSend){
-                    String reqMessage = requesterMessage.getText().toString();
+            }//Normal conversation from here
+            else if (view == reqSendButton){
+                    String reqMessage = requesterMessageInput.getText().toString();
+                    requesterThread.setMessage(reqMessage);
                     synchronized (requesterThread) {
-                        requesterThread.setMessage(reqMessage);
                         requesterThread.notify();
-                        //updateUI(reqMessage, false);
                     }
-                }
-                else if (view == respSend){
-
-                    String resMessage = responderMessage.getText().toString();
+                    requesterMessageInput.setText("");
+            }
+            else if (view == respSendButton && remoteRequesterExists){
+                    String resMessage = responderMessageInput.getText().toString();
+                    responderThread.setMessage(resMessage);
                     synchronized (responderThread.remoteUser){
-                        responderThread.setMessage(resMessage);
                         responderThread.remoteUser.notify();
-                        //updateUI(resMessage,true);
-                        System.out.println("responder sync");
                     }
-                }
+                    responderMessageInput.setText("");
+
             }
         
     }//END onclick
@@ -161,7 +157,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //Thread-safe updating of UI elements
     @Override
     public void updateUI(String message, boolean fromResponder) {
-        System.out.println(message);
+        //Just for logging
+        String sender = (fromResponder) ? "Responder: " : "Requester: ";
+        System.out.println(sender + message);
 
         //Run this code on UI-thread
         this.runOnUiThread(new Runnable() {
@@ -169,12 +167,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
 
                 if (fromResponder) {
-                    responderInfoTv.append(message + "\n");
+                    responderChatlogTv.append(message + "\n");
                 } else {
-                    requesterInfoTv.append(message + "\n");
+                    requesterChatlogTv.append(message + "\n");
                 }
             }
         });
+    }
+
+    //We need to know if there is a remote user (requester) before we respond.
+    @Override
+    public void remoteRequesterExists() {
+            remoteRequesterExists = true;
+            CommunicationHandler.getInstance().remote = true;
+            runOnUiThread(new Runnable(){
+                @Override
+                public void run() {
+                    respSendButton.setEnabled(true);
+                }
+            });
     }
 
     //Convenience methods: save and restore latest IP
@@ -186,10 +197,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    //All the below is to handle configuration change.
-    // Retrieve references for existing threads
-    // and update reference to activity
-    private void checkReferences() {
+    //All the below can be ignored. Handling configuration change.
+    // 1: Delete the Activity-reference on death
+    // 2: Retrieve references for existing threads
+    // and update reference to the new Activity
+    //
+    @Override
+    protected void onDestroy() {
+        //avoid memory leak and delete static reference
+        CommunicationHandler.getInstance().act = null;
+        super.onDestroy();
+    }
+
+    //Only called on Activity (re-)start
+    private void checkAndUpdateReferences() {
         if (CommunicationHandler.getInstance().resp != null) {
             responderThread = CommunicationHandler.getInstance().resp;
             responderThread.setPhoneHome(this);
@@ -199,13 +220,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             requesterThread.setPhoneHome(this);
         }
         CommunicationHandler.getInstance().act = this;
-    }
-
-    @Override
-    protected void onDestroy() {
-        //avoid memory leak and delete static reference
-        CommunicationHandler.getInstance().act = null;
-        super.onDestroy();
+        remoteRequesterExists = CommunicationHandler.getInstance().remote;
     }
 
 }

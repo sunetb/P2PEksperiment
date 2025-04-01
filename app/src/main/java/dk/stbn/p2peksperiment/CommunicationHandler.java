@@ -21,14 +21,15 @@ public class CommunicationHandler implements CommunicationInterface {
 
     private static CommunicationHandler instance;
 
-    //Housekeeping references
+    //Housekeeping references and state
     Responder resp;
     Requester req;
     Activity act;
+    public boolean ip_Submitted;
+    public boolean remote = false;
 
     String nodeID = "_";
 
-    //Shared data
     private CommunicationHandler(){}
 
     public static CommunicationHandler getInstance() {
@@ -51,7 +52,6 @@ public class CommunicationHandler implements CommunicationInterface {
     @Override
     public String generateResponse(String req){
         if (req.equals("____Bye bye!!____")){
-
             return "See you";
         }
         if (req.equals("ID")){

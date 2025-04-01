@@ -11,28 +11,24 @@ public class Requester implements Runnable{
 
     MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
 
-    String remoteIP;
+    String remoteIP; //The IP to connect to
 
-    String message;
+    String message; //The user message to send
     private boolean carryOn = true;
-
-    public void setMessage(String usermessage){
-        message = usermessage;
-    }
 
     public Requester(String remoteIP, MessageUpdate main) {
         this.remoteIP = remoteIP;
         phoneHome = main;
-        CommunicationHandler.getInstance().req = this;
+        CommunicationHandler.getInstance().req = this; //in case of configuration change
+    }
+    public void setMessage(String usermessage){
+        message = usermessage;
     }
 
-    public void endConversation(){
-
-        carryOn = false;
+    //For config change
+    public void setPhoneHome(Activity act){
+        this.phoneHome = (MessageUpdate) act;
     }
-
-
-
     @Override
     public void run() {
 
@@ -44,24 +40,22 @@ public class Requester implements Runnable{
             DataInputStream instream = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
-
-
             while (carryOn) {
-                //Write message to outstream
+
                 //message = CommunicationHandler.getInstance().generateRequest(messageFromResponder);
-                System.out.println("requester før wait");
+
+                //Waiting for the user to type
                 synchronized (this){
                     wait();
                 }
-                System.out.println("requester efter wait");
+                //Write message to outstream
                 out.writeUTF(message);
                 out.flush();
                 phoneHome.updateUI("I said:______" + message, false);
-                //Read message from Responder
+
+                //Wait for message from Responder (remote user)
                 String messageFromResponder = instream.readUTF();
                 phoneHome.updateUI("RESPONDER says:_" + messageFromResponder, false);
-                //Simple wait
-                //Util.waitABit();
             }
             //Saying goodbye
             out.writeUTF("____Bye bye!!____");
@@ -83,8 +77,6 @@ public class Requester implements Runnable{
 
     }//run()
 
-    public void setPhoneHome(Activity act){
-                this.phoneHome = (MessageUpdate) act;
-    }
+
 
 }
