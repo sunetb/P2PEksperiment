@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Requester requesterThread;
 
 
-    // UI related state
+    //UI related state
     private boolean ip_submitted = false;
 
     //Check if an instance is already running
