@@ -11,11 +11,17 @@ import java.net.Socket;
 class Responder implements Runnable {
 
     private MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
-    int requesterNumber = 0;
+    int requesterNumber = 0; //rude
+    RemoteRequester remoteUser; //Should be a list in order to handle more than one
+    String message = "good morning";
 
     public Responder(MessageUpdate main) {
         CommunicationHandler.getInstance().resp = this;
         this.phoneHome = main;
+    }
+
+    public void setMessage(String usermessage){
+        message = usermessage;
     }
 
     @Override
@@ -29,7 +35,8 @@ class Responder implements Runnable {
                 Socket socket = serverSocket.accept();//Accept is called when a requester connects
                 phoneHome.updateUI("RESPONDER: connection accepted", true);
                 requesterNumber++;
-                new RemoteRequester(socket, requesterNumber).start();
+                remoteUser = new RemoteRequester(socket, requesterNumber);
+                remoteUser.start();
 
             }//while listening for requesters
 
@@ -68,26 +75,23 @@ class Responder implements Runnable {
                 DataInputStream instream = new DataInputStream(socket.getInputStream());
                 DataOutputStream outstream = new DataOutputStream(socket.getOutputStream());
 
-                String request = (String) instream.readUTF();
-                phoneHome.updateUI("Requester " + number + " says: " + request, true);
-
-                //Primitive "hello"-part
-                String response = CommunicationHandler.getInstance().generateResponse("ID");
-                outstream.writeUTF(response);
-                outstream.flush();
-                Util.waitABit();
-                //Run conversation server-side
+                //Run conversation responder-side
                 while (carryOn) {
                     //Recieving message from remote requester
-                    request = (String) instream.readUTF();
+                    String request = (String) instream.readUTF();
                     phoneHome.updateUI("Requester " + number + " says: " + request, true);
                     //Generating response
-                    response = CommunicationHandler.getInstance().generateResponse(request);
-                    phoneHome.updateUI("Reply to requester " + number + ": " + response, true);
+                    //response = CommunicationHandler.getInstance().generateResponse(request);
+                    System.out.println("responder before wait");
+                    synchronized (this){
+                        wait();
+                    }
+                    System.out.println("responder after wait");
+                    phoneHome.updateUI("Reply to requester " + number + ": " + message, true);
                     //Write message (answer) to client
-                    outstream.writeUTF(response);
+                    outstream.writeUTF(message);
                     outstream.flush();
-                    Util.waitABit();//HINT You might want to remove this at some point
+                    //Util.waitABit();//HINT You might want to remove this at some point
                 }
 
                 //Closing everything down
@@ -100,6 +104,8 @@ class Responder implements Runnable {
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
      }//MyResponderThread

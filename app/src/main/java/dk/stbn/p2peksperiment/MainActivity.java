@@ -1,7 +1,6 @@
 package dk.stbn.p2peksperiment;
 
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -23,11 +22,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     * Then request-response from there..
     * */
 
-    //Trick to prevent crash on config-change
-
-    //// UI-elements
-   //Test-state
-    private Button requesterButton, responderButton, reqSend, respSend;;
+   //// UI-elements
+    private Button requesterButton, reqSend, respSend;;
     private TextView responderInfoTv, requesterInfoTv, responderTitleTv;
     private EditText requesterMessage, responderMessage;
 
@@ -42,22 +38,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //Check if an instance is already running
     boolean requesterStarted;
     boolean responderStarted;
-    boolean testState = true;
+
+    //Test-state with animals+food or Chat-state where threads wait for the user
+    boolean testState = false;
     boolean chatState;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         chatState = !testState;
+
+        //Choose which XML-file to use for UI
         if (chatState) setContentView(R.layout.chat_like_ui);
         else setContentView(R.layout.activity_main);
+
+        //Handling screen-rotation
         requesterStarted = (CommunicationHandler.getInstance().req != null);
         responderStarted = (CommunicationHandler.getInstance().resp != null);
-        System.out.println("Responder started? " + responderStarted);
         checkReferences();
 
         //UI boilerplate
-        requesterButton = findViewById(R.id.button);
-        responderButton = findViewById(R.id.sendrequester);
+        requesterButton = findViewById(R.id.reqbutton);
+        reqSend = findViewById(R.id.sendrequester);
         requesterMessage = findViewById(R.id.requestermessagefield);
         responderTitleTv = findViewById(R.id.respondertitle);
         responderInfoTv = findViewById(R.id.responderoutput);
@@ -66,8 +67,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //Setting click-listeners on buttons
         requesterButton.setOnClickListener(this);
-        responderButton.setOnClickListener(this);
+        reqSend.setOnClickListener(this);
 
+        if (chatState){
+            respSend = findViewById(R.id.respsend);
+            respSend.setOnClickListener(this);
+            responderMessage = findViewById(R.id.respmessagefield);
+        }
         //Setting some UI state
         if (!requesterStarted) {
             String lastIP = getSavedIP();
@@ -77,7 +83,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 requesterMessage.setText(lastIP);
 
             requesterButton.setEnabled(false); //deactivates the button
-
 
             //Getting the IP address of the device
             //1 Show it
@@ -99,33 +104,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
 
-        if (view == requesterButton) {
-            if (!requesterStarted) { //Start scenario
-                requesterStarted = true;
-                String remoteIP = requesterMessage.getText().toString();
-                requesterThread = new Requester(remoteIP, this);
-                new Thread(requesterThread).start();
-                updateUI("- - - REQUESTER STARTED - - - \n", false);
-                requesterButton.setText("Stop");
-            } else { //Stop scenario
-                //requesterThread.endConversation();
-                //responderThread.endConversation();
+            if (view == requesterButton) {
+                reqSend.setEnabled(true);
                 requesterButton.setEnabled(false);
-                responderButton.setEnabled(true);
-                requesterStarted = false;
-                ip_submitted = false;
-                updateUI("- - - REQUESTER ENDED - - - \n", false);
-            }
-        } else if (view == responderButton) {
-            if (!ip_submitted) {
-                ip_submitted = true;
-                saveIP(requesterMessage.getText().toString());
-                requesterButton.setEnabled(true);
-                requesterButton.setText("start");
-                responderButton.setEnabled(false);
-            }
-        }
+                if (!requesterStarted) { //Start scenario
+                    requesterStarted = true;
+                    String remoteIP = requesterMessage.getText().toString();
+                    requesterThread = new Requester(remoteIP, this);
+                    new Thread(requesterThread).start();
+                    updateUI("- - - REQUESTER STARTED - - - \n", false);
 
+                } else
+                    if (testState) { //Stop scenario
+                    //requesterThread.endConversation();
+                    //responderThread.endConversation();
+                    requesterStarted = false;
+                    ip_submitted = false;
+                    updateUI("- - - REQUESTER ENDED - - - \n", false);
+                }
+            } else if (view == reqSend) {
+                if (!ip_submitted) {
+                    ip_submitted = true;
+                    saveIP(requesterMessage.getText().toString());
+                    requesterButton.setEnabled(true);
+                    requesterButton.setText("start");
+                    reqSend.setEnabled(false);
+                }
+            }
+            //Continuous conversation, chat-style
+            if(requesterStarted && chatState){
+
+                requesterButton.setEnabled(false);
+
+                if (view == reqSend){
+                    String reqMessage = requesterMessage.getText().toString();
+                    synchronized (requesterThread) {
+                        requesterThread.setMessage(reqMessage);
+                        requesterThread.notify();
+                        //updateUI(reqMessage, false);
+                    }
+                }
+                else if (view == respSend){
+
+                    String resMessage = responderMessage.getText().toString();
+                    synchronized (responderThread.remoteUser){
+                        responderThread.setMessage(resMessage);
+                        responderThread.remoteUser.notify();
+                        //updateUI(resMessage,true);
+                        System.out.println("responder sync");
+                    }
+                }
+            }
+        
     }//END onclick
 
     //Thread-safe updating of UI elements
@@ -134,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         System.out.println(message);
 
         //Run this code on UI-thread
-        runOnUiThread(new Runnable() {
+        this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
 
@@ -155,15 +185,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return PreferenceManager.getDefaultSharedPreferences(this).getString("lastIP", "no");
     }
 
-    @Override
-    protected void onDestroy() {
-        //avoid memory leak and delete static reference
-        CommunicationHandler.getInstance().act = null;
-        super.onDestroy();
-    }
 
-    //On configuration change, retrieve references for existing threads
-    // and update references to activity
+    //All the below is to handle configuration change.
+    // Retrieve references for existing threads
+    // and update reference to activity
     private void checkReferences() {
         if (CommunicationHandler.getInstance().resp != null) {
             responderThread = CommunicationHandler.getInstance().resp;
@@ -174,6 +199,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             requesterThread.setPhoneHome(this);
         }
         CommunicationHandler.getInstance().act = this;
+    }
+
+    @Override
+    protected void onDestroy() {
+        //avoid memory leak and delete static reference
+        CommunicationHandler.getInstance().act = null;
+        super.onDestroy();
     }
 
 }
