@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 
 
 /* NOTE:
-* This class is VERY primitive and that is on purpose.
+* This class is VERY primitive - on purpose!
 * The idea is give you a starting point to work from.
 *
 * Having this class and the interface is just

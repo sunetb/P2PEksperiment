@@ -147,9 +147,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         responderThread.remoteUser.notify();
                     }
                     responderMessageInput.setText("");
-
             }
-        
     }//END onclick
 
     //Thread-safe updating of UI elements
@@ -173,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    //We need to know if there is a remote user (requester) before we respond.
+    //We may want to know if there is a remote user (requester) before we let the user respond.
     @Override
     public void remoteRequesterExists() {
             remoteRequesterExists = true;
@@ -194,7 +192,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String getSavedIP(){
         return PreferenceManager.getDefaultSharedPreferences(this).getString("lastIP", "no");
     }
-
 
     //All the below can be ignored. Handling configuration change.
     // 1: Delete the Activity-reference on death

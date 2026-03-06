@@ -29,6 +29,7 @@ public class Requester implements Runnable{
     public void setPhoneHome(Activity act){
         this.phoneHome = (MessageUpdate) act;
     }
+
     @Override
     public void run() {
 

@@ -11,7 +11,7 @@ import java.net.Socket;
 class Responder implements Runnable {
 
     private MessageUpdate phoneHome; //Access to MainActivity to pass messages to UI
-    RemoteRequester remoteUser; //Should be a list in order to handle more than one
+    RemoteRequester remoteUser; //Should be ArrayList in order to handle more than one reqester
     String message = ""; //The user message to be sent
     boolean contact = false; //Is anyone on the line?
 
@@ -21,7 +21,7 @@ class Responder implements Runnable {
     }
 
     public void setMessage(String usermessage){
-        message = usermessage;
+        this.message = usermessage;
     }
     public void setPhoneHome(Activity act){
         this.phoneHome = (MessageUpdate) act;
@@ -32,7 +32,7 @@ class Responder implements Runnable {
         try {
             ServerSocket serverSocket = new ServerSocket(4444);
 
-            //Not working: always be ready for next requester
+            //Works only for 1:1 communication
             while (true) {
                 phoneHome.updateUI("RESPONDER: start listening..", true);
                 Socket socket = serverSocket.accept();//Accept is called when a requester connects
